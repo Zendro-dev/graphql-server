@@ -281,26 +281,6 @@ f   *
 
    }
 
-   module.exports.checkInverseAssociation = async function( from_model , to_model, search_model_name, foreign_key, id_toadd ){
-     let result = false;
-
-     if(from_model.name === search_model_name){
-       let associated = await from_model.findOne({where:{ personId: id_toadd }});
-       let exists = await to_model.findOne({where:{id: id_toadd}});
-       result =  !associated && exists;
-     }else{
-        let exists  = await to_model.findOne({where: {id : id_toadd}});
-        result =  exists && exists[foreign_key] === null;
-     }
-
-     if(!result){
-        throw new Error("Item intended to associate either it doesn't exists or it's already associated");
-     }
-
-     return result;
-   }
-
-
    module.exports.checkExistence = function(ids_to_add, model){
 
      let ids = Array.isArray(ids_to_add) ? ids_to_add : [ ids_to_add ];
@@ -311,6 +291,12 @@ f   *
         return result.map( (r, index)=>{ return r === 0 ? ids[index] : false } ).filter( r =>{return r !== false});
       })
 
+   }
+
+   module.exports.asyncForEach = async function(array, callback) {
+     for (let index = 0; index < array.length; index++) {
+       await callback(array[index], index, array);
+     }
    }
 
    /**
