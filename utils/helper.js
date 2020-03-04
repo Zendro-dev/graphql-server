@@ -237,10 +237,11 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * parseOrderCursor - Parse the order options and return the where statement for cursor based pagination (forward)
    *
    * @param  {Array} order  Order options to translate to a where statement used by sequelize.
-   * @param  {Object} cursor Cursor record taken as start point(exclusive) to create the where statement
+   * @param  {Object} cursor Cursor record taken as start point(exclusive) to create the where statement.
+   * @param  {String} idAttribute  id attribute of the calling model.
    * @return {Object}        Where statement to start retrieving records after the given cursor holding the order conditions.
    */
-  module.exports.parseOrderCursor = function(order, cursor){
+  module.exports.parseOrderCursor = function(order, cursor, idAttribute){
     //check: at least one order field is expected
     if(order.length <= 0) { return {}; }
 
@@ -249,7 +250,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
     
     //set operator for last-index
     let operator = order[last_index][1] === 'ASC' ? '$gte' : '$lte';
-    if (order[last_index][0] === 'id') { operator = operator.substring(0, 3); }
+    if (order[last_index][0] === idAttribute) { operator = operator.substring(0, 3); }
     
     //add condition for last-index
     let where_statement = {
@@ -261,7 +262,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
       operator = order[i][1] === 'ASC' ? '$gte' : '$lte';
       let strict_operator = order[i][1] === 'ASC' ? '$gt' : '$lt';
       //strict operator if we are ordering by id
-      if(order[i][0] === 'id' ){ operator = operator.substring(0, 3);}
+      if(order[i][0] === idAttribute){ operator = operator.substring(0, 3);}
       
       where_statement = {
         ['$and'] :[
@@ -278,9 +279,10 @@ module.exports.vueTable = function(req, model, strAttributes) {
    *
    * @param  {Array} order  Order options to translate to a where statement used by sequelize.
    * @param  {Object} cursor Before-cursor record taken as start point(exclusive) to create the where statement
+   * @param  {String} idAttribute  id attribute of the calling model.
    * @return {Object}        Where statement to start retrieving records before the given cursor holding the order conditions.
    */
-  module.exports.parseOrderCursorBefore = function(order, cursor){
+  module.exports.parseOrderCursorBefore = function(order, cursor, idAttribute){
     //check: at least one order field is expected
     if(order.length <= 0) { return {}; }
 
@@ -289,7 +291,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
     
     //set operator for last-index
     let operator = order[last_index][1] === 'ASC' ? '$lte' : '$gte';
-    if(order[last_index][0] === 'id') { operator = operator.substring(0, 3); }
+    if(order[last_index][0] === idAttribute) { operator = operator.substring(0, 3); }
     
     //add condition for last-index
     let where_statement = {
@@ -301,7 +303,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
       operator = order[i][1] === 'ASC' ? '$lte' : '$gte';
       let strict_operator = order[i][1] === 'ASC' ? '$lt' : '$gt';
       //strict operator if we are ordering by id
-      if(order[i][0] === 'id' ){ operator = operator.substring(0, 3);}
+      if(order[i][0] === idAttribute){ operator = operator.substring(0, 3);}
       
        where_statement = {
         ['$and'] :[
