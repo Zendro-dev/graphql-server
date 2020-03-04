@@ -21,8 +21,6 @@ const _ = require('lodash');
     return selectOpts
   }
 
-
-
   /**
    * requestedUrl - Recover baseUrl from the request.
    *
@@ -37,8 +35,6 @@ const _ = require('lodash');
       //(port == 80 || port == 443 ? '' : ':' + port) +
       req.baseUrl;
   }
-
-
 
   /**
    * prevNextPageUrl - Creates request string for previous or next page int the vue-table data object.
@@ -66,7 +62,6 @@ const _ = require('lodash');
     return baseUrl
   }
 
-
   /**
    * sort - Creates sort argument as needed in sequelize and accordingly to the order implicit in the resquest info.
    *
@@ -82,7 +77,6 @@ const _ = require('lodash');
     }
     return sortOpts
   }
-
 
   /**
    * search - Creates search argument as needed in sequelize and accordingly to the filter string implicit in the resquest info.
@@ -115,7 +109,6 @@ const _ = require('lodash');
     }
     return selectOpts
   }
-
 
 // includeAssociations = function (req) {
 //     return req.query.excludeAssociations ? {} : {
@@ -176,7 +169,6 @@ module.exports.vueTable = function(req, model, strAttributes) {
     })
   }
 
-
   /**
    * modelAttributes - Return info about each column in the model's table
    *
@@ -184,22 +176,21 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @return {Array}       Array of objects, each object contains info for each attribute in the model
    */
   modelAttributes = function(model) {
-      return model.sequelize.query(
-        "SELECT column_name, data_type, is_nullable, column_default " +
-        "FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" +
-        model.tableName + "'", {
-          type: model.sequelize.QueryTypes.SELECT
-        }
-      )
-    }
+    return model.sequelize.query(
+      "SELECT column_name, data_type, is_nullable, column_default " +
+      "FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" +
+      model.tableName + "'", {
+        type: model.sequelize.QueryTypes.SELECT
+      }
+    )
+  }
 
   //attributes to discard
   discardModelAttributes = ['createdAt', 'updatedAt']
 
-
   /**
    * filterModelAttributesForCsv - Filter attributes from a given model
-f   *
+   *
    * @param  {Object} model        Sequelize model from which the attributes will be filtered
    * @param  {Array} discardAttrs Array of attributes to discard
    * @return {Array}              Filtered attributes
@@ -215,7 +206,6 @@ f   *
       })
     })
   }
-
 
   /**
    * csvTableTemplate - Returns template of model, i.e. header of each column an its type
@@ -243,77 +233,118 @@ f   *
     })
   }
 
-
   /**
-   * parseOrderCursor - Parse the order options and return the where statement for cursor based pagination
+   * parseOrderCursor - Parse the order options and return the where statement for cursor based pagination (forward)
    *
    * @param  {Array} order  Order options to translate to a where statement used by sequelize.
    * @param  {Object} cursor Cursor record taken as start point(exclusive) to create the where statement
    * @return {Object}        Where statement to start retrieving records after the given cursor holding the order conditions.
    */
-   module.exports.parseOrderCursor = function(order, cursor){
+  module.exports.parseOrderCursor = function(order, cursor){
+    //check: at least one order field is expected
+    if(order.length <= 0) { return {}; }
 
-     let last_index = order.length-1;
-     let start_index = order.length-2;
+    let last_index = order.length-1;
+    let start_index = order.length-2;
+    
+    //set operator for last-index
+    let operator = order[last_index][1] === 'ASC' ? '$gte' : '$lte';
+    if (order[last_index][0] === 'id') { operator = operator.substring(0, 3); }
+    
+    //add condition for last-index
+    let where_statement = {
+      [order[last_index][0]]: { [operator]: cursor[order[last_index][0]] }
+    }
 
-     //at least one order field is expected
-     let operator = order[ last_index ][1] === 'ASC' ? '$gte' : '$lte';
-     if(order[last_index][0] === 'id' ){ operator = operator.substring(0, 3);}
-      let where_statement = {
-       [ order[last_index][0] ] :{  [operator]: cursor[ order[last_index][0] ]  }
-     }
+    //set the other conditions
+    for( let i= start_index; i>=0; i-- ){
+      operator = order[i][1] === 'ASC' ? '$gte' : '$lte';
+      let strict_operator = order[i][1] === 'ASC' ? '$gt' : '$lt';
+      //strict operator if we are ordering by id
+      if(order[i][0] === 'id' ){ operator = operator.substring(0, 3);}
+      
+      where_statement = {
+        ['$and'] :[
+          { [order[i][0] ] : { [ operator ]: cursor[ order[i][0] ] } },
+          {['$or'] : [ {[order[i][0]]: { [strict_operator]: cursor[ order[i][0] ]} } , where_statement  ] }
+        ]
+      }
+    }
+    return where_statement;
+  }
 
-     for( let i= start_index; i>=0; i-- ){
-         operator = order[i][1] === 'ASC' ? '$gte' : '$lte';
-        let strict_operator = order[i][1] === 'ASC' ? '$gt' : '$lt';
-        //strict operator if we are ordering by id
-        if(order[i][0] === 'id' ){ operator = operator.substring(0, 3);}
+  /**
+   * parseOrderCursorBefore - Parse the order options and return the where statement for cursor based pagination (backward)
+   *
+   * @param  {Array} order  Order options to translate to a where statement used by sequelize.
+   * @param  {Object} cursor Before-cursor record taken as start point(exclusive) to create the where statement
+   * @return {Object}        Where statement to start retrieving records before the given cursor holding the order conditions.
+   */
+  module.exports.parseOrderCursorBefore = function(order, cursor){
+    //check: at least one order field is expected
+    if(order.length <= 0) { return {}; }
+
+    let last_index = order.length-1;
+    let start_index = order.length-2;
+    
+    //set operator for last-index
+    let operator = order[last_index][1] === 'ASC' ? '$lte' : '$gte';
+    if(order[last_index][0] === 'id') { operator = operator.substring(0, 3); }
+    
+    //add condition for last-index
+    let where_statement = {
+      [order[last_index][0]]: { [operator]: cursor[order[last_index][0]] }
+    }
+
+    //process the other indexes
+    for( let i= start_index; i>=0; i-- ){
+      operator = order[i][1] === 'ASC' ? '$lte' : '$gte';
+      let strict_operator = order[i][1] === 'ASC' ? '$lt' : '$gt';
+      //strict operator if we are ordering by id
+      if(order[i][0] === 'id' ){ operator = operator.substring(0, 3);}
+      
        where_statement = {
-         ['$and'] :[
-           { [order[i][0] ] : { [ operator ]: cursor[ order[i][0] ] } },
-           {['$or'] : [ {[order[i][0]]: { [strict_operator]: cursor[ order[i][0] ]} } , where_statement  ] }
-         ]
-       }
+        ['$and'] :[
+          { [order[i][0] ] : { [ operator ]: cursor[ order[i][0] ] } },
+          {['$or'] : [ {[order[i][0]]: { [strict_operator]: cursor[ order[i][0] ]} } , where_statement  ] }
+        ]
+      }
+    }
+    return where_statement;
+  }
 
-     }
+  module.exports.checkInverseAssociation = async function( from_model , to_model, search_model_name, foreign_key, id_toadd ){
+    let result = false;
 
-     return where_statement;
+    if(from_model.name === search_model_name){
+      let associated = await from_model.findOne({where:{ personId: id_toadd }});
+      let exists = await to_model.findOne({where:{id: id_toadd}});
+      result =  !associated && exists;
+    }else{
+      let exists  = await to_model.findOne({where: {id : id_toadd}});
+      result =  exists && exists[foreign_key] === null;
+    }
 
-   }
+    if(!result){
+      throw new Error("Item intended to associate either it doesn't exists or it's already associated");
+    }
 
-   module.exports.checkInverseAssociation = async function( from_model , to_model, search_model_name, foreign_key, id_toadd ){
-     let result = false;
+    return result;
+  }
 
-     if(from_model.name === search_model_name){
-       let associated = await from_model.findOne({where:{ personId: id_toadd }});
-       let exists = await to_model.findOne({where:{id: id_toadd}});
-       result =  !associated && exists;
-     }else{
-        let exists  = await to_model.findOne({where: {id : id_toadd}});
-        result =  exists && exists[foreign_key] === null;
-     }
+  module.exports.checkExistence = function(ids_to_add, model){
 
-     if(!result){
-        throw new Error("Item intended to associate either it doesn't exists or it's already associated");
-     }
-
-     return result;
-   }
-
-
-   module.exports.checkExistence = function(ids_to_add, model){
-
-     let ids = Array.isArray(ids_to_add) ? ids_to_add : [ ids_to_add ];
-     let promises = ids.map( id => { return model.countRecords({field: model.idAttribute(), value:{value: id }, operator: 'eq' })  } );
+    let ids = Array.isArray(ids_to_add) ? ids_to_add : [ ids_to_add ];
+    let promises = ids.map( id => { return model.countRecords({field: model.idAttribute(), value:{value: id }, operator: 'eq' })  } );
 
 
-      return Promise.all(promises).then( result =>{
-        return result.map( (r, index)=>{ return r === 0 ? ids[index] : false } ).filter( r =>{return r !== false});
-      })
+    return Promise.all(promises).then( result =>{
+      return result.map( (r, index)=>{ return r === 0 ? ids[index] : false } ).filter( r =>{return r !== false});
+    })
 
-   }
+  }
 
-   /**
+  /**
    * orderedRecords - javaScript function for ordering of records based on GraphQL orderInput for local post-processing
    *
    * @param  {Array} matchingRecords  List of records to be ordered
@@ -325,7 +356,6 @@ f   *
     //This could be sped up by to O(n*m), m = # of remote servers by using merge sort
   }
 
-
   /**
    * paginateRecords - post-precossing pagination of ordered records
    *
@@ -336,7 +366,6 @@ f   *
   module.exports.paginateRecords = function(orderedRecords, first) {
     return orderedRecords.slice(0,first);
   }
-
 
   /**
    * toGraphQLConnectionObject - translate an array of records into a GraphQL connection
