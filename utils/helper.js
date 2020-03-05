@@ -359,14 +359,25 @@ module.exports.vueTable = function(req, model, strAttributes) {
   }
 
   /**
-   * paginateRecords - post-precossing pagination of ordered records
+   * paginateRecordsCursor - post-precossing pagination of ordered records (forward)
    *
    * @param  {Array} orderedRecords  List of records to be paginated
    * @param  {Object} paginate GraphQL paginate argument
    * @return {Array}        paginated List of records
    */
-  module.exports.paginateRecords = function(orderedRecords, first) {
+  module.exports.paginateRecordsCursor = function(orderedRecords, first) {
     return orderedRecords.slice(0,first);
+  }
+
+  /**
+   * paginateRecordsBefore - post-precossing pagination of ordered records (backwards)
+   *
+   * @param  {Array} orderedRecords  List of records to be paginated
+   * @param  {Object} paginate GraphQL paginate argument
+   * @return {Array}        paginated List of records
+   */
+  module.exports.paginateRecordsBefore = function(orderedRecords, last) {
+    return orderedRecords.slice(Math.max(orderedRecords.length - last,0));
   }
 
   /**
@@ -375,9 +386,10 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @param  {Array} paginatedRecords List of records to be translated
    * @param  {Object} model            Record's type
    * @param  {Boolean} hasNextPage      hasNextPage parameter for pagination info
+   * @param  {Boolean} hasPreviousPage      hasPreviousPage parameter for pagination info
    * @return {type}                  description
    */
-  module.exports.toGraphQLConnectionObject = function(paginatedRecords, model, hasNextPage) {
+  module.exports.toGraphQLConnectionObject = function(paginatedRecords, model, hasNextPage, hasPreviousPage) {
     let edges = paginatedRecords.map(e => {
         let temp_node = new model(e);
         return {
@@ -388,6 +400,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
 
     let pageInfo = {
       hasNextPage: hasNextPage,
+      hasPreviousPage: hasPreviousPage,
       endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null
     }
 
