@@ -502,27 +502,18 @@ module.exports.vueTable = function(req, model, strAttributes) {
 
   module.exports.checkExistence = function(ids_to_add, model){
     //check
-    if (ids_to_add===null || ids_to_add===undefined) { 
+    if (ids_to_add===null || ids_to_add===undefined) {
       throw new Error(`Invalid arguments on checkExistence(), 'ids' argument should not be 'null' or 'undefined'`);
     }
-    //check existence by count
-    let ids = Array.isArray(ids_to_add) ? ids_to_add : [ ids_to_add ];
-    let promises = ids.map( id => { 
-      let responsibleAdapter = model.registeredAdapters[model.adapterForIri(id)];
-      let search =  {field: model.idAttribute(), value:{value: id }, operator: 'eq' };
-      return model.countRecords(search, [responsibleAdapter]);
-    });
 
-    return Promise.all(promises).then( results =>{
-      return results.filter( (r, index)=>{
-        //check
-        if (typeof r !== 'number') { 
-          throw new Error(`Invalid response from remote cenz-server`);
-        }
-        //filter not found ids
-        return (r === 0); 
-      });
-    })
+    let ids = Array.isArray(ids_to_add) ? ids_to_add : [ ids_to_add ];
+
+     let promises = ids.map( id => { return model.readById(id)  } );
+
+     let results  = await Promise.all(promises.map(p => p.catch(e => e)));
+
+     let wrong_ids = results.map( (r, index) => { return (r === null || r instanceof Error) ? ids[index] : false }).filter( r => r !== false);
+     return wrong_ids;
   }
 
    /**
@@ -639,10 +630,10 @@ module.exports.vueTable = function(req, model, strAttributes) {
   }
 
   /**
-   * Returns a new array instance with the set of adapters that remains after 
+   * Returns a new array instance with the set of adapters that remains after
    * remove all excluded adapters, specified on the search.excludeAdapterNames
-   * input, from the @adapters array. 
-   * 
+   * input, from the @adapters array.
+   *
    * This function does not modify the @adapter param, but instead, returns a new
    * array instance.
    *
@@ -656,20 +647,20 @@ module.exports.vueTable = function(req, model, strAttributes) {
    */
   module.exports.removeExcludedAdapters = function(search, adapters) {
     let result = Array.from(adapters);
-    
+
     //check: @adapters
     if(adapters.length === 0) {
       return [];
     }//else
-    
+
     //check: @search
     if((!search || typeof search !== 'object') //has not search object
       || (!search.excludeAdapterNames //or has search object but has not exclusions
-          || !Array.isArray(search.excludeAdapterNames) 
+          || !Array.isArray(search.excludeAdapterNames)
           || search.excludeAdapterNames.length === 0)) {
       return result;
     }//else
-    
+
     //do: exclusion
     let i = 0;
     while (i < result.length) {
@@ -689,12 +680,12 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * the @excludeAdapterNames on search object.
    *
    * @param {object} search - Search object.
-   * @param {string} currentAdapterName - String of the current adapterName. 
+   * @param {string} currentAdapterName - String of the current adapterName.
    * @param {array} registeredAdapters - Array of registered adapters for the calling ddm.
    *
-   * @return {object} New search object that includes the excluded adapters on the 
+   * @return {object} New search object that includes the excluded adapters on the
    * attribute @excludeAdapterNames. This functions does not modify the @search object,
-   * instead a new one is returned. 
+   * instead a new one is returned.
    */
   module.exports.addExclusions = function(search, currentAdapterName, registeredAdapters) {
     let nsearch = {};
@@ -727,7 +718,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
     }
 
     /*
-     * append all @registeredAdapters, except the @currentAdapter, 
+     * append all @registeredAdapters, except the @currentAdapter,
      * to search.excludeAdapterNames array.
      */
     registeredAdapters.forEach(a => {
@@ -748,7 +739,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @param {object} context - The GraphQL context passed to the resolver.
    * @param {array} resultObj - Connection- or CountObj returned by ddm readMany.
    *
-   * @return {array} Returns the changed resultObj and context with the added benignErrors 
+   * @return {array} Returns the changed resultObj and context with the added benignErrors
    */
   module.exports.writeBenignErrors = function(authorizationCheck, context, resultObj) {
     //check adapter authorization Errors
