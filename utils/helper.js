@@ -764,3 +764,40 @@ module.exports.vueTable = function(req, model, strAttributes) {
     console.log("context_benignErrors: " + JSON.stringify(context.benignErrors))
     return [resultObj,context];
   }
+
+  module.exports.To_manyAdjustFieldResolverSearch = function (search, rootRecord) {
+    if (search === undefined) {
+      search = {
+        "field": rootRecord.constructor.idAttribute(),
+        "value": {
+          "value": rootRecord.getIdValue()
+        },
+        "operator": "eq"
+      };
+    } else if (typeof search === 'object' && (search.operator === undefined
+      || (search.value === undefined && search.search === undefined))) {
+      search = {
+        "field": rootRecord.constructor.idAttribute(),
+        "value": {
+          "value": rootRecord.getIdValue()
+        },
+        "operator": "eq",
+        "excludeAdapterNames": search.excludeAdapterNames
+      };
+    } else {
+      let excludeAdapterNames = search.excludeAdapterNames;
+      delete search.excludeAdapterNames;
+      search = {
+        "operator": "and",
+        "search": [{
+          "field": rootRecord.constructor.idAttribute(),
+          "value": {
+            "value": rootRecord.getIdValue()
+          },
+          "operator": "eq"
+        }, search],
+        "excludeAdapterNames": excludeAdapterNames
+      };
+    }  
+    return search;
+  }
