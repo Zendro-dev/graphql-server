@@ -765,39 +765,83 @@ module.exports.vueTable = function(req, model, strAttributes) {
     return [resultObj,context];
   }
 
-  module.exports.To_manyAdjustFieldResolverSearch = function (search, rootRecord) {
-    if (search === undefined) {
-      search = {
-        "field": rootRecord.constructor.idAttribute(),
-        "value": {
-          "value": rootRecord.getIdValue()
-        },
-        "operator": "eq"
-      };
-    } else if (typeof search === 'object' && (search.operator === undefined
-      || (search.value === undefined && search.search === undefined))) {
-      search = {
-        "field": rootRecord.constructor.idAttribute(),
-        "value": {
-          "value": rootRecord.getIdValue()
-        },
-        "operator": "eq",
-        "excludeAdapterNames": search.excludeAdapterNames
+  /**
+   * addSearchField - Creates a new search object which one will include the new search 
+   * instance (@field, @value, @operator) with values passed as arguments.
+   * 
+   * This function preserves the attribute @excludeAdapterNames if exists on the @search argument.
+   * 
+   * This function does not modifies the @search object received, instead creates a new one.
+   *
+   * @param  {string} field Field to filter. Must be defined.
+   * @param  {object} value Value contains type(i.e. array, string) and actual value to match in the filter. Must be defined.
+   * @param  {string} operator Operator used to perform the filter. Must be defined.
+   * @param  {object} search Recursive search object.
+   *
+   * @return {object} New search object.
+   *
+   */
+  module.exports.addSearchField = function ({search, field, value, operator}) {
+    let nsearch = {};
+
+    //check
+    if(operator === undefined || field === undefined || value === undefined) {
+      throw new Error('Illegal arguments, neither of: (@field, @value, @operator) can be undefined.');
+    }
+
+    /**
+     * Case 1: @search is undefined.
+     * 
+     * Create a new search object with received parameters.
+     */
+    if(search === undefined) {
+      nsearch = {
+        "field": field,
+        "value": value,
+        "operator": operator
       };
     } else {
-      let excludeAdapterNames = search.excludeAdapterNames;
-      delete search.excludeAdapterNames;
-      search = {
-        "operator": "and",
-        "search": [{
-          "field": rootRecord.constructor.idAttribute(),
-          "value": {
-            "value": rootRecord.getIdValue()
-          },
-          "operator": "eq"
-        }, search],
-        "excludeAdapterNames": excludeAdapterNames
-      };
+      
+      //check
+      if(typeof search !== 'object') {
+        throw new Error('Illegal "@search" argument type, it must be an object.');
+      }
+      
+      /**
+       * Case 2: @search is defined but has not search-operation attributes defined.
+       * 
+       * Create a new search object with received parameters and preserve @excludeAdapterNames
+       * attribute.
+       */
+      if(search.operator === undefined || (search.value === undefined && search.search === undefined)) {
+        
+        search = {
+          "field": field,
+          "value": value,
+          "operator": operator,
+          "excludeAdapterNames": search.excludeAdapterNames
+        };
+      } else {
+        /**
+         * Case 3: @search is defined and has search-operation attributes defined.
+         * 
+         * Create a new recursive search object with received parameters and preserve @excludeAdapterNames
+         * attribute.
+         */
+        let csearch = {...search};
+        let excludeAdapterNames = csearch.excludeAdapterNames;
+        delete csearch.excludeAdapterNames;
+        
+        nsearch = {
+          "operator": "and",
+          "search": [{
+            "field": field,
+            "value": value,
+            "operator": operator
+          }, csearch],
+          "excludeAdapterNames": excludeAdapterNames
+        };
+      }
     }  
-    return search;
+    return nsearch;
   }

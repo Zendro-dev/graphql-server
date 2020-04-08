@@ -49,7 +49,8 @@ module.exports = class search{
   toSequelize(){
     let searchsInSequelize = {};
 
-    if (this.value === undefined || this.operator === undefined) {
+    if((this.operator === undefined || (this.value === undefined && this.search === undefined))){
+      //there's no search-operation arguments
       return searchsInSequelize;
 
     } else if(this.search === undefined && this.field === undefined){
