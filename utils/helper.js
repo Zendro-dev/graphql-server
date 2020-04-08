@@ -500,6 +500,14 @@ module.exports.vueTable = function(req, model, strAttributes) {
     return where_statement;
   }
 
+
+  /**
+   * checkExistence - This function will check if the ids intended to be added actually exist
+   *
+   * @param  {ArrayString} ids_to_add Array or string representing the ids to be added
+   * @param  {Object} model      Model from which the function will check if the records exist
+   * @return {Array}            Subarray of ids_to_add that don't exist  
+   */
   module.exports.checkExistence = function(ids_to_add, model){
     //check
     if (ids_to_add===null || ids_to_add===undefined) {
@@ -515,6 +523,32 @@ module.exports.vueTable = function(req, model, strAttributes) {
      let wrong_ids = results.map( (r, index) => { return (r === null || r instanceof Error) ? ids[index] : false }).filter( r => r !== false);
      return wrong_ids;
   }
+
+
+  /**
+   * checkIdsToRemove - This function will check if the ids to be removed are actually associated
+   *
+   * @param  {Object} record               Record to which the association are intended to be removed
+   * @param  {String} association_resolver Resolver name to get associated items
+   * @param  {Array} ids_to_remove        Ids of the associated items to be removed
+   * @param  {String} id_attribute         Id name
+   * @return {Array}                      Subarray of ids_to_remove that are not actually associated
+   */
+  module.exports.checkIdsToRemove = async function( record, association_resolver, ids_to_remove, id_attribute){
+
+    let associated_records = await record[ association_resolver ]({});
+    let found_ids = associated_records.edges.map( e => `${e.node[id_attribute] }` );
+    let wrong_ids = [];
+
+    await asyncForEach(ids_to_remove, async id => {
+        if (!found_ids.includes(id)) {
+          wrong_ids.push(id);
+        }
+    });
+    return wrong_ids;
+  }
+
+
 
    /**
    * orderedRecords - javaScript function for ordering of records based on GraphQL orderInput for local post-processing
