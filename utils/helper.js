@@ -506,7 +506,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
    *
    * @param  {ArrayString} ids_to_add Array or string representing the ids to be added
    * @param  {Object} model      Model from which the function will check if the records exist
-   * @return {Array}            Subarray of ids_to_add that don't exist  
+   * @return {Array}            Subarray of ids_to_add that don't exist
    */
   module.exports.checkExistence = function(ids_to_add, model){
     //check
@@ -535,16 +535,24 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @return {Array}                      Subarray of ids_to_remove that are not actually associated
    */
   module.exports.checkIdsToRemove = async function( record, association_resolver, ids_to_remove, id_attribute){
-
-    let associated_records = await record[ association_resolver ]({});
-    let found_ids = associated_records.edges.map( e => `${e.node[id_attribute] }` );
     let wrong_ids = [];
+    //depending on the type of association this will be an array or a single record
+    let associated_record_s = await record[ association_resolver ]({});
 
-    await asyncForEach(ids_to_remove, async id => {
-        if (!found_ids.includes(id)) {
-          wrong_ids.push(id);
-        }
-    });
+    //handle for to_one and to_many associations
+    if( Array.isArray(ids_to_remove) ){ //to_many association
+      let found_ids = associated_records.edges.map( e => `${e.node[id_attribute] }` );
+
+      await asyncForEach(ids_to_remove, async id => {
+          if (!found_ids.includes(id)) {
+            wrong_ids.push(id);
+          }
+      });
+    }else if(!associated_record_s || ids_to_remove  !== `${associated_record_s[id_attribute]}` ){ //to_one association
+      wrong_ids.push[ ids_to_remove];
+    }
+
+
     return wrong_ids;
   }
 
