@@ -508,7 +508,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @param  {Object} model      Model from which the function will check if the records exist
    * @return {Array}            Subarray of ids_to_add that don't exist
    */
-  module.exports.checkExistence = function(ids_to_add, model){
+  module.exports.checkExistence = async function(ids_to_add, model){
     //check
     if (ids_to_add===null || ids_to_add===undefined) {
       throw new Error(`Invalid arguments on checkExistence(), 'ids' argument should not be 'null' or 'undefined'`);
