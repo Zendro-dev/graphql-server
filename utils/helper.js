@@ -500,7 +500,14 @@ module.exports.vueTable = function(req, model, strAttributes) {
     return where_statement;
   }
 
-  module.exports.checkExistence = function(ids_to_add, model){
+  /**
+   * filterOutIdsNotInUse - Get the IDs (out of a given list) that are not in use in a given model
+   * 
+   * @param{Array | object} ids_to_add The IDs that are to be checked
+   * @param{object} model The model for which the IDs shall be checked
+   * @returns{Promise<Array>} An Array of the IDs *not* in use as a Promise
+   */
+  module.exports.filterOutIdsNotInUse = async function(ids_to_add, model){
     //check
     if (ids_to_add===null || ids_to_add===undefined) { 
       throw new Error(`Invalid arguments on checkExistence(), 'ids' argument should not be 'null' or 'undefined'`);
@@ -594,7 +601,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * asyncForEach - Asynchronous for each
    *
    * @param  {Array} array    Array to transver
-   * @param  {type} callback Callback to execute with each element in the array
+   * @param  {function} callback Callback to execute with each element in the array
    */
   module.exports.asyncForEach = async function(array, callback) {
     for (let index = 0; index < array.length; index++) {
