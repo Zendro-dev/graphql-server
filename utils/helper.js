@@ -850,6 +850,10 @@ module.exports.vueTable = function(req, model, strAttributes) {
     return (a !== undefined && Array.isArray(a) && a.length > 0);
   }
 
+  function isEmptyArray(a) {
+    return (a !== undefined && Array.isArray(a) && a.length === 0);
+  }
+
   function isNotUndefinedAndNotNull(v) {
     return (v !== undefined && v !== null);
   }
@@ -883,6 +887,57 @@ module.exports.vueTable = function(req, model, strAttributes) {
         return acc;
       }
     }, 0);
+  }
+
+  /**
+   * associationArgsDef - Receives arrays of ids on @input, and checks if these ids exists. Returns true
+   * if all received ids exist, and throws an error if at least one of the ids does not exist.
+   * 
+   * @param  {object} input   Object with sanitized entries of the form: <add>Association:[id1, ..., idn].
+   * @param  {object} context Object with mutation context attributes.
+   * @param  {object} associationArgsDef  Object with entries of the form {'<add>Association' : model},
+   *                                      where 'model' is an instance of the association's model.
+   * @return {boolean} Returns true if all ids on the input array-values exists. Throw an error if some 
+   *                   of the ids does not exists.
+   */
+  module.exports.assocArgsAreExistingIDs(input, context, associationArgsDef) {
+    let allArgsAreExistingIds = Object.keys(associationArgsDef).reduce( function(acc, curr){
+      
+      //get ids (Int or Array)
+      let currAssocIds = input[curr];
+
+      //check: if empty array or undefined or null --> return true
+      if(isEmptyArray() || !isNotUndefinedAndNotNull()) {
+        return acc; //equivalent to: acc && true
+      } //else...
+
+      //if not array make it one
+      if(!isNonEmptyArray(currAssocIds)) {
+        currAssocIds = [currAssocIds];
+      }
+
+      //do check
+      let currModel = associationArgsDef[curr];
+
+      //(To do: ask about these functions):
+      //let countResolverFunk = resolvers[modelName][`count${modelPlCp}`]
+      //let readByIdResolverFunk = /* ... */
+
+      /**
+       * Note: once the function checkExistence() returns FALSE, then
+       * the 'acc' value never gona be TRUE again, so maybe is worthless
+       * to continue checking the other ids, and throw an error immediately
+       * after get a FALSE value from checkExistence function. 
+       * 
+       * (To do: ask about this.)
+       * 
+       */
+      return acc && checkExistence(currAssocIds, currModel);
+    }, true);
+
+    if (!allArgsAreExistingIds) throw new Error('Error: Some of the ids given to associate, do not exist.');
+    //else...
+    return true
   }
 
   module.exports.unique = unique
