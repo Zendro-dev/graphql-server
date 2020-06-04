@@ -16,6 +16,7 @@
     "awaitify-stream": "^1.0.2",
     "bcrypt": "^3.0.3",
     "bcryptjs": "^2.4.3",
+    "cassandra-driver": "^4.5.2",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "cors": "^2.8.4",
