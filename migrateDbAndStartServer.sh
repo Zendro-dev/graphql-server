@@ -38,5 +38,8 @@ if [ -d ./seeders ]; then
 	fi
 fi
 
+# Migrate the Cassandra database
+node ./utils/setup_cassandra_db.js
+
 # Start GraphQL-server
 npm start # acl
