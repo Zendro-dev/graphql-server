@@ -1,7 +1,8 @@
 const driver = require('cassandra-driver');
+const globals = require('../config/globals');
 
 const client = new driver.Client({
-    contactPoints: ['cassandra:9042'],
+    contactPoints: [globals.CASSANDRA_HOST],
     localDataCenter: 'datacenter1',
     keyspace: 'sciencedb'
 });
