@@ -78,4 +78,28 @@ module.exports = class search{
 
     return searchsInSequelize;
   }
+
+  /**
+   * toCassandra - Convert recursive search instance to search string for use in CQL
+   * 
+   * @returns{string} Translated search instance into CQL string
+   */
+  toCassandra(){
+    let searchsInCassandra = '';
+
+    if((this.operator === undefined || (this.value === undefined && this.search === undefined))){
+      //there's no search-operation arguments
+      return searchsInCassandra;
+    } else if(this.search === undefined && this.field === undefined) {
+      searchsInCassandra = this.operator + this.value;
+    } else if(this.search === undefined) {
+      searchsInCassandra = this.field + this.operator + this.value;
+    } else if (this.operator === 'and') {
+      searchsInCassandra = search.join(' and ');
+    } else {
+      throw new Error('Statement not supported by CQL:\n' + JSON.stringify(this, null, 2));
+    }
+
+    return 'WHERE ' +  searchsInCassandra;
+  }
 };
