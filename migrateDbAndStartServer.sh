@@ -41,5 +41,7 @@ fi
 # Migrate the Cassandra database
 node ./utils/setup_cassandra_db.js
 
+echo -e 'Cassandra is migrated.\n'
+
 # Start GraphQL-server
 npm start # acl
