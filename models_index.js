@@ -116,3 +116,20 @@ fs.readdirSync(__dirname + "/models-generic")
     });
 
 // **********************************************************************************
+// IMPORT CASSANDRA MODELS
+
+fs.readdirSync(__dirname + "/models-cassandra")
+    .filter(function(file) {
+        return (file.indexOf('.') !== 0) && (file !== 'index.js') && (file.slice(-3) === '.js');
+    })
+    .forEach(function(file) {
+        console.log("loaded model: " + file);
+        let model = require(`./${path.join("./models-cassandra", file)}`);
+
+        if(models[model.name])
+            throw Error(`Duplicated model name ${model.name}`);
+
+        models[model.name] = model;
+    });
+
+// **********************************************************************************
