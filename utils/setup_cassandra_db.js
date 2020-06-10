@@ -1,4 +1,5 @@
 const client = require('./cassandra-client');
+const migrations_cassandra = require('../migrations-cassandra/index');
 
 async function createTableMigrated() {
     const tableQuery = "SELECT table_name FROM system_schema.tables WHERE keyspace_name='sciencedb';"
@@ -22,6 +23,9 @@ async function createTableMigrated() {
         }
     }
     if (migrateToDo) {
+      for await (let cassandraHandler of migrations_cassandra) {
+        cassandraHandler.up();
+      }
       const createTable = "CREATE TABLE IF NOT EXISTS db_migrated ( migrated_at timeuuid PRIMARY KEY )";
       await client.execute(createTable);
       console.log('Migration table created');
