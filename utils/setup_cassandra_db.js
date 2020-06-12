@@ -26,7 +26,7 @@ async function createTableMigrated() {
       /*for await (let cassandraHandler of migrations_cassandra) {
         cassandraHandler.up();
       }*/
-      Promise.all(migrations_cassandra.map(async cassandraHandler => await cassandraHandler.up()));
+      Promise.all(migrations_cassandra.values.map(async cassandraHandler => await cassandraHandler.up()));
       const createTable = "CREATE TABLE IF NOT EXISTS db_migrated ( migrated_at timeuuid PRIMARY KEY )";
       await client.execute(createTable);
       console.log('Migration table created');
