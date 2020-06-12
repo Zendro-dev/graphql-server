@@ -1,5 +1,5 @@
 const client = require('./cassandra-client');
-const migrations_cassandra = require('../migrations-cassandra/index');
+const migrations_cassandra = require(__dirname + '/../migrations-cassandra/index');
 
 async function createTableMigrated() {
     const tableQuery = "SELECT table_name FROM system_schema.tables WHERE keyspace_name='sciencedb';"
