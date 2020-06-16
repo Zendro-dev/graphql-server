@@ -106,9 +106,9 @@ module.exports = class search{
       //there's no search-operation arguments
       return searchsInCassandra;
     } else if(this.search === undefined && this.field === undefined) {
-      searchsInCassandra = transformCassandraOperator(this.operator) + this.value;
+      searchsInCassandra = this.transformCassandraOperator(this.operator) + this.value;
     } else if(this.search === undefined) {
-      searchsInCassandra = this.field + transformCassandraOperator(this.operator) + this.value;
+      searchsInCassandra = this.field + this.transformCassandraOperator(this.operator) + this.value;
     } else if (this.operator === 'and') {
       searchsInCassandra = search.join(' and ');
     } else {
