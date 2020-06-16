@@ -1,5 +1,5 @@
 const Ajv = require('ajv');
-const ajv = new Ajv({});
+const ajv = new Ajv({ allErrors: true, useDefault: true, verbose: true });
 const uuidSchema = { type: 'string', format: 'uuid' };
 
 /**
@@ -113,10 +113,12 @@ module.exports = class search{
     } else if(this.search === undefined && this.field === undefined) {
       searchsInCassandra = this.transformCassandraOperator(this.operator) + this.value;
     } else if(this.search === undefined) {
-      if (this.field !== idAttribute && ajv.validate(uuidSchema, this.value)) {
-        this.value = `'${this.value}'`;
-      }
-      searchsInCassandra = this.field + this.transformCassandraOperator(this.operator) + this.value;
+      let validate = ajv.validate(uuidSchema, this.value.toString());
+      let value = this.value;
+      if (this.field !== idAttribute && validate) {
+        value = `'${this.value.toString()}'`;
+      } 
+      searchsInCassandra = this.field + this.transformCassandraOperator(this.operator) + value;
     } else if (this.operator === 'and') {
       searchsInCassandra = search.join(' and ');
     } else {
