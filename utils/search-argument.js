@@ -1,3 +1,6 @@
+const Ajv = require('ajv');
+const ajv = new Ajv({});
+const uuidSchema = { type: 'string', format: 'uuid' };
 
 /**
  * search Class to parse search argument for any model and translate it so sequelize model will accept it
@@ -97,9 +100,11 @@ module.exports = class search{
   /**
    * toCassandra - Convert recursive search instance to search string for use in CQL
    * 
+   * @param{string} idAttribute - The name of the ID attribute which isn't cast into apostrophes if it is a UUID
+   * 
    * @returns{string} Translated search instance into CQL string
    */
-  toCassandra(){
+  toCassandra(idAttribute){
     let searchsInCassandra = '';
 
     if((this.operator === undefined || (this.value === undefined && this.search === undefined))){
@@ -108,6 +113,9 @@ module.exports = class search{
     } else if(this.search === undefined && this.field === undefined) {
       searchsInCassandra = this.transformCassandraOperator(this.operator) + this.value;
     } else if(this.search === undefined) {
+      if (this.field !== idAttribute && ajv.validate(uuidSchema, this.value)) {
+        this.value = `'${this.value}'`;
+      }
       searchsInCassandra = this.field + this.transformCassandraOperator(this.operator) + this.value;
     } else if (this.operator === 'and') {
       searchsInCassandra = search.join(' and ');
