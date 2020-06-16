@@ -79,6 +79,21 @@ module.exports = class search{
     return searchsInSequelize;
   }
 
+  transformCassandraOperator(operatorString) {
+    switch (operatorString) {
+      case 'eq': return ' = ';
+      case 'lt': return ' < ';
+      case 'gt': return ' > ';
+      case 'le': return ' <= ';
+      case 'ge': return ' >= ';
+      case '_in': return ' IN ';
+      case 'cont': return ' CONTAINS ';
+      case 'ctk': return ' CONTAINS KEY ';
+      // AND not supported here, because this.search is undefined if this is executed
+      default: throw new Error(`Operator ${operatorString} not supported`);
+    }
+  }
+
   /**
    * toCassandra - Convert recursive search instance to search string for use in CQL
    * 
@@ -91,9 +106,9 @@ module.exports = class search{
       //there's no search-operation arguments
       return searchsInCassandra;
     } else if(this.search === undefined && this.field === undefined) {
-      searchsInCassandra = this.operator + this.value;
+      searchsInCassandra = transformCassandraOperator(this.operator) + this.value;
     } else if(this.search === undefined) {
-      searchsInCassandra = this.field + this.operator + this.value;
+      searchsInCassandra = this.field + transformCassandraOperator(this.operator) + this.value;
     } else if (this.operator === 'and') {
       searchsInCassandra = search.join(' and ');
     } else {
