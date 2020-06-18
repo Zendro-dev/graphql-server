@@ -93,6 +93,7 @@ module.exports = class search{
       case 'cont': return ' CONTAINS ';
       case 'ctk': return ' CONTAINS KEY ';
       // AND not supported here, because this.search is undefined if this is executed
+      case 'and': throw new Error(`Operator 'and' can only be used with an array of search terms`);
       default: throw new Error(`Operator ${operatorString} not supported`);
     }
   }
