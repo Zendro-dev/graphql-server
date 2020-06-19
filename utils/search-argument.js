@@ -113,6 +113,9 @@ module.exports = class search{
       return searchsInCassandra;
     } else if(this.search === undefined && this.field === undefined) {
       searchsInCassandra = this.transformCassandraOperator(this.operator) + this.value;
+    } else if (this.search === undefined && (this.operator === 'tlt' || this.operator === 'tgt')) {
+      let op = (this.operator === 'tlt') ? '<' : '>';
+      searchsInCassandra = `token(${this.field}) ${op} token(${this.value})`;
     } else if(this.search === undefined) {
       let validate = ajv.validate(uuidSchema, this.value.toString());
       let value = this.value;
@@ -121,7 +124,7 @@ module.exports = class search{
       } 
       searchsInCassandra = this.field + this.transformCassandraOperator(this.operator) + value;
     } else if (this.operator === 'and') {
-      searchsInCassandra = search.join(' and ');
+      searchsInCassandra = search.map(singleSearch => new search(singleSearch).toCassandra()).join(' and ');
     } else {
       throw new Error('Statement not supported by CQL:\n' + JSON.stringify(this, null, 2));
     }
