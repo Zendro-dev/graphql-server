@@ -9,7 +9,7 @@
 
 const _ = require('lodash');
 const path = require('path');
-const models = require(path.join(__dirname, '..', 'models_index.js'));
+const models = require(path.join(__dirname, '..', 'models' ,'index.js'));
 const resolvers = require(path.join(__dirname, '..', 'resolvers', 'index.js'));
 const inflection = require('inflection');
 const checkAuthorization = require('./check-authorization');

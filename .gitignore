@@ -8,8 +8,11 @@ package-lock.json
 
 # ModelGen output folders
 migrations
-models
-models-webservice
+generic
+sql
+distributed
+adapters
+cenz-server
 resolvers
 schemas
 validations

@@ -301,7 +301,7 @@ describe('Validate existence', function() {
                     numberOfPresentIds++;
                 }
             }
-            return {sum: numberOfPresentIds, errors: []};
+            return numberOfPresentIds;
         },
         definition: {model: 'Testmodel'}
     }
@@ -326,7 +326,7 @@ describe('Validate existence', function() {
                     numberOfPresentIds++;
                 }
             }
-            return {sum: numberOfPresentIds, errors: []};
+            return numberOfPresentIds;
         },
         definition: {model: 'Testmodel-lokal'}
     }
@@ -423,7 +423,7 @@ describe('Validate association arguments\' existence', function() {
                     numberOfPresentIds++;
                 }
             }
-            return {sum: numberOfPresentIds, errors: []};
+            return numberOfPresentIds;
         },
         definition: {model: 'Dog'}
     }
@@ -448,7 +448,7 @@ describe('Validate association arguments\' existence', function() {
                     numberOfPresentIds++;
                 }
             }
-            return {sum: numberOfPresentIds, errors: []};
+            return numberOfPresentIds;
         },
         definition: {model: 'Cat'}
     }
@@ -473,7 +473,7 @@ describe('Validate association arguments\' existence', function() {
                     numberOfPresentIds++;
                 }
             }
-            return {sum: numberOfPresentIds, errors: []};
+            return numberOfPresentIds;
         },
         definition: {model: 'Hamster'}
     }
@@ -498,7 +498,7 @@ describe('Validate association arguments\' existence', function() {
                     numberOfPresentIds++;
                 }
             }
-            return {sum: numberOfPresentIds, errors: []};
+            return numberOfPresentIds;
         },
         definition: {model: 'Employer'}
     }

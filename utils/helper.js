@@ -2,7 +2,9 @@ const checkAuthorization = require('./check-authorization');
 const objectAssign = require('object-assign');
 const math = require('mathjs');
 const _ = require('lodash');
-const models_index = require('../models_index');
+const models_index = require('../models/index');
+const { Op } = require("sequelize");
+const globals = require('../config/globals')
 
   /**
    * paginate - Creates pagination argument as needed in sequelize cotaining limit and offset accordingly to the current
@@ -172,67 +174,37 @@ module.exports.vueTable = function(req, model, strAttributes) {
   }
 
   /**
-   * modelAttributes - Return info about each column in the model's table
-   *
-   * @param  {Object} model Sequelize model from which the info will be given.
-   * @return {Array}       Array of objects, each object contains info for each attribute in the model
-   */
-  modelAttributes = function(model) {
-      return model.sequelize.query(
-        "SELECT column_name, data_type, is_nullable, column_default " +
-        "FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" +
-        model.tableName + "'", {
-          type: model.sequelize.QueryTypes.SELECT
-        }
-      )
-    }
-
-  //attributes to discard
-  discardModelAttributes = ['createdAt', 'updatedAt']
-
-  /**
-   * filterModelAttributesForCsv - Filter attributes from a given model
-   *
-   * @param  {Object} model        Sequelize model from which the attributes will be filtered
-   * @param  {Array} discardAttrs Array of attributes to discard
-   * @return {Array}              Filtered attributes
-   */
-  filterModelAttributesForCsv = function(model, discardAttrs) {
-    discardAttrs = discardAttrs || discardModelAttributes
-    modelPrimaryKey = model.primaryKeyField
-    if (modelPrimaryKey)
-      discardAttrs = discardAttrs.concat([modelPrimaryKey])
-    return modelAttributes(model).then(function(x) {
-      return x.filter(function(i) {
-        return discardAttrs.indexOf(i.column_name) < 0
-      })
-    })
-  }
-
-  /**
    * csvTableTemplate - Returns template of model, i.e. header of each column an its type
    *
-   * @param  {Object} model         Sequelize model from which the template will be returned.
-   * @param  {Array} discardAttrs Attributes to discard from the template
-   * @return {Array}              Array of strings, one for header and one for the attribute't type.
+   * @param  {Object} modelDefinition  Model definition as especified on model.
+   * @return {Array}  Array of two strings, one for the header and other one for the attribute's types.
    */
-  module.exports.csvTableTemplate = function(model, discardAttrs) {
-    return filterModelAttributesForCsv(model,
-      discardAttrs).then(function(x) {
-      csvHeader = []
-      csvExmplRow = []
-      x.forEach(function(i) {
-        csvStr = i.data_type
-        if (i.is_nullable.toLowerCase() === 'false' || i.is_nullable.toLowerCase() ===
-          'no' || i.is_nullable === 0)
-          csvStr += ",required"
-        if (i.column_default)
-          csvStr += ",default:" + i.column_default
-        csvHeader = csvHeader.concat([i.column_name])
-        csvExmplRow = csvExmplRow.concat([csvStr])
-      })
-      return [csvHeader.join(','), csvExmplRow.join(',')]
+  module.exports.csvTableTemplate = function(modelDefinition) {
+    let csvHeader = [];
+    let csvTypes = [];
+    let id = modelDefinition.id;
+    let attributes = modelDefinition.attributes;
+
+    /**
+     * Internal id first.
+     */
+    if(modelDefinition.internalId) {
+      csvHeader.push(id.name);
+      csvTypes.push(id.type);
+    }
+
+    /**
+     * Other attributes then.
+     */
+    Object.keys(attributes).forEach((key) => {
+      //not internal id
+      if(key !== id.name) {
+        csvHeader.push(key);
+        csvTypes.push(attributes[key]);
+      }
     })
+
+    return [csvHeader.join(','), csvTypes.join(',')]
   }
 
   /**
@@ -281,7 +253,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
         return {};
     }
     //cursor: must have idAttribute
-    if(cursor===undefined||cursor===null||typeof cursor!=='object'||cursor.idAttribute === undefined){
+    if(cursor===undefined||cursor===null||typeof cursor!=='object'||cursor[idAttribute] === undefined){
       return {};
     }
 
@@ -310,15 +282,15 @@ module.exports.vueTable = function(req, model, strAttributes) {
        * Set operator for base step.
        */
     //set operator according to order type.
-    let operator = order[last_index][1] === 'ASC' ? '$gte' : '$lte';
+    let operator = order[last_index][1] === 'ASC' ? 'gte' : 'lte';
     //set strictly '>' or '<' for idAttribute (condition (1)).
-    if (!includeCursor && order[last_index][0] === idAttribute) { operator = operator.substring(0, 3); }
+    if (!includeCursor && order[last_index][0] === idAttribute) { operator = operator.substring(0, 2); }
 
       /*
        * Produce condition for base step.
        */
     let where_statement = {
-      [order[last_index][0]]: { [operator]: cursor[order[last_index][0]] }
+      [order[last_index][0]]: { [Op[operator]]: cursor[order[last_index][0]] }
     }
 
     /*
@@ -330,31 +302,31 @@ module.exports.vueTable = function(req, model, strAttributes) {
        * Set operators
        */
       //set relaxed operator '>=' or '<=' for condition (2.a or 2.b)
-      operator = order[i][1] === 'ASC' ? '$gte' : '$lte';
+      operator = order[i][1] === 'ASC' ? 'gte' : 'lte';
       //set strict operator '>' or '<' for condition (2.a).
-      let strict_operator = order[i][1] === 'ASC' ? '$gt' : '$lt';
+      let strict_operator = order[i][1] === 'ASC' ? 'gt' : 'lt';
       //set strictly '>' or '<' for idAttribute (condition (1)).
-      if(!includeCursor && order[i][0] === idAttribute){ operator = operator.substring(0, 3);}
+      if(!includeCursor && order[i][0] === idAttribute){ operator = operator.substring(0, 2);}
 
       /**
        * Produce: AND/OR conditions
        */
       where_statement = {
-        ['$and'] :[
+        [Op['and']] :[
           /**
            * Set
            * condition (1) in the case of idAttribute or
            * condition (2.a or 2.b) for other fields.
            */
-          { [order[i][0] ] : { [ operator ]: cursor[ order[i][0] ] } },
+          { [order[i][0] ] : { [Op[operator]]: cursor[ order[i][0] ] } },
 
-          { ['$or'] :[
+          { [Op['or']] :[
             /**
              * Set
              * condition (1) in the case of idAttribute or
              * condition (2.a) for other fields.
              */
-            { [order[i][0]]: { [strict_operator]: cursor[ order[i][0] ]} },
+            { [order[i][0]]: { [Op[strict_operator]]: cursor[ order[i][0] ]} },
 
             /**
              * Add the previous produced conditions.
@@ -414,7 +386,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
         return {};
     }
     //cursor: must have idAttribute
-    if(cursor===undefined||cursor===null||typeof cursor!=='object'||cursor.idAttribute === undefined){
+    if(cursor===undefined||cursor===null||typeof cursor!=='object'||cursor[idAttribute] === undefined){
       return {};
     }
 
@@ -443,15 +415,15 @@ module.exports.vueTable = function(req, model, strAttributes) {
        * Set operator for base step.
        */
     //set operator according to order type.
-    let operator = order[last_index][1] === 'ASC' ? '$lte' : '$gte';
+    let operator = order[last_index][1] === 'ASC' ? 'lte' : 'gte';
     //set strictly '>' or '<' for idAttribute (condition (1)).
-    if (!includeCursor && order[last_index][0] === idAttribute) { operator = operator.substring(0, 3); }
+    if (!includeCursor && order[last_index][0] === idAttribute) { operator = operator.substring(0, 2); }
 
       /*
        * Produce condition for base step.
        */
     let where_statement = {
-      [order[last_index][0]]: { [operator]: cursor[order[last_index][0]] }
+      [order[last_index][0]]: { [Op[operator]]: cursor[order[last_index][0]] }
     }
 
     /*
@@ -463,31 +435,31 @@ module.exports.vueTable = function(req, model, strAttributes) {
        * Set operators
        */
       //set relaxed operator '>=' or '<=' for condition (2.a or 2.b)
-      operator = order[i][1] === 'ASC' ? '$lte' : '$gte';
+      operator = order[i][1] === 'ASC' ? 'lte' : 'gte';
       //set strict operator '>' or '<' for condition (2.a).
-      let strict_operator = order[i][1] === 'ASC' ? '$lt' : '$gt';
+      let strict_operator = order[i][1] === 'ASC' ? 'lt' : 'gt';
       //set strictly '>' or '<' for idAttribute (condition (1)).
-      if(!includeCursor && order[i][0] === idAttribute){ operator = operator.substring(0, 3);}
+      if(!includeCursor && order[i][0] === idAttribute){ operator = operator.substring(0, 2);}
 
       /**
        * Produce: AND/OR conditions
        */
       where_statement = {
-        ['$and'] :[
+        [Op['and']] :[
           /**
            * Set
            * condition (1) in the case of idAttribute or
            * condition (2.a or 2.b) for other fields.
            */
-          { [order[i][0] ] : { [ operator ]: cursor[ order[i][0] ] } },
+          { [order[i][0] ] : { [Op[operator]]: cursor[ order[i][0] ] } },
 
-          { ['$or'] :[
+          { [Op['or']] :[
             /**
              * Set
              * condition (1) in the case of idAttribute or
              * condition (2.a) for other fields.
              */
-            { [order[i][0]]: { [strict_operator]: cursor[ order[i][0] ]} },
+            { [order[i][0]]: { [Op[strict_operator]]: cursor[ order[i][0] ]} },
 
             /**
              * Add the previous produced conditions.
@@ -548,7 +520,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
         return {};
     }
     //cursor: must have idAttribute
-    if(cursor===undefined||cursor===null||typeof cursor!=='object'||cursor.idAttribute === undefined){
+    if(cursor===undefined||cursor===null||typeof cursor!=='object'||cursor[idAttribute] === undefined){
       return {};
     }
 
@@ -586,7 +558,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
        *
        * Equivalent to non-generic segment:
        *    let where_statement = {
-       *      [order[last_index][0]]: { [operator]: cursor[order[last_index][0]] }
+       *      [order[last_index][0]]: { [Op[operator]]: cursor[order[last_index][0]] }
        *    }
        */
       let search_field = helper.addSearchField({
@@ -629,7 +601,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
            * condition (2.a or 2.b) for other fields.
            * 
            * Equivalent to non-generic segment:
-           *    { [order[i][0] ] : { [ operator ]: cursor[ order[i][0] ] } }
+           *    { [order[i][0] ] : { [Op[operator]]: cursor[ order[i][0] ] } }
            */
           "field": order[i][0],
           "value": {"value": cursor[order[i][0]]},
@@ -645,7 +617,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
              * condition (2.a) for other fields.
              * 
              * Equivalent to non-generic segment:
-             *    { [order[i][0]]: { [strict_operator]: cursor[ order[i][0] ]} },
+             *    { [order[i][0]]: { [Op[strict_operator]]: cursor[ order[i][0] ]} },
              */
             "field": order[i][0],
             "value": {"value": cursor[order[i][0]]},
@@ -666,7 +638,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
              * Set inner recursive search operator.
              * 
              * Equivalent to non-generic segment:
-             *    { ['$or'] :[
+             *    { [Op['or']] :[
              */
           }, 'or'),
 
@@ -674,7 +646,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
            * Set outer recursive search operator.
            * 
            * Equivalent to non-generic segment:
-           *    ['$and'] :[
+           *    [Op['and']] :[
            */
         }, 'and'
       );
@@ -730,7 +702,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
         return {};
     }
     //cursor: must have idAttribute
-    if(cursor===undefined||cursor===null||typeof cursor!=='object'||cursor.idAttribute === undefined){
+    if(cursor===undefined||cursor===null||typeof cursor!=='object'||cursor[idAttribute] === undefined){
       return {};
     }
 
@@ -768,7 +740,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
        *
        * Equivalent to non-generic segment:
        *    let where_statement = {
-       *      [order[last_index][0]]: { [operator]: cursor[order[last_index][0]] }
+       *      [order[last_index][0]]: { [Op[operator]]: cursor[order[last_index][0]] }
        *    }
        */
       let search_field = helper.addSearchField({
@@ -811,7 +783,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
            * condition (2.a or 2.b) for other fields.
            * 
            * Equivalent to non-generic segment:
-           *    { [order[i][0] ] : { [ operator ]: cursor[ order[i][0] ] } }
+           *    { [order[i][0] ] : { [Op[operator]]: cursor[ order[i][0] ] } }
            */
           "field": order[i][0],
           "value": {"value": cursor[order[i][0]]},
@@ -827,7 +799,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
              * condition (2.a) for other fields.
              * 
              * Equivalent to non-generic segment:
-             *    { [order[i][0]]: { [strict_operator]: cursor[ order[i][0] ]} },
+             *    { [order[i][0]]: { [Op[strict_operator]]: cursor[ order[i][0] ]} },
              */
             "field": order[i][0],
             "value": {"value": cursor[order[i][0]]},
@@ -848,7 +820,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
              * Set inner recursive search operator.
              * 
              * Equivalent to non-generic segment:
-             *    { ['$or'] :[
+             *    { [Op['or']] :[
              */
           }, 'or'),
 
@@ -856,7 +828,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
            * Set outer recursive search operator.
            * 
            * Equivalent to non-generic segment:
-           *    ['$and'] :[
+           *    [Op['and']] :[
            */
         }, 'and'
       );
@@ -885,10 +857,10 @@ module.exports.vueTable = function(req, model, strAttributes) {
         let allResponsibleAdapters = ids.map(id => model.registeredAdapters[model.adapterForIri(id)]);
         let allResponsibleAdaptersAsArray = Array.isArray(allResponsibleAdapters) ? allResponsibleAdapters : [allResponsibleAdapters];
         let countIds = await model.countRecords(searchArg, module.exports.unique(allResponsibleAdaptersAsArray));
-        return countIds.sum === ids.length;
+        return countIds === ids.length;
       }
       let countIds = await model.countRecords(searchArg);
-      return countIds.sum === ids.length;
+      return countIds === ids.length;
     } catch (err) {
       return await ids.reduce(async (prev, curr) => {
         let acc = await prev;
@@ -1428,4 +1400,19 @@ module.exports.vueTable = function(req, model, strAttributes) {
         return acc;
       }
     }, 0);
+  }
+  
+  /** checkCountAndReduceRecordLimitHelper - given a count, checks whether it exceeds the
+   * defined record limit. Throws desriptive error if it exceeds. If not reduces the record Limit
+   * in the GraphQL context.
+   * 
+   * @param {Integer} count count to reduce from the recordsLimit
+   * @param {Object} context The GraphQL context passed to the resolver
+   * @param {String} resolverName The name of the resolver function
+   */
+  module.exports.checkCountAndReduceRecordLimitHelper = function(count, context, resolverName) {
+    if (count > context.recordsLimit) {
+      throw new Error(`Max record limit of ${globals.LIMIT_RECORDS} exceeded in ${resolverName}`);
+    }
+    context.recordsLimit -= count;
   }

@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt')
 const jsonwebtoken = require('jsonwebtoken')
 const path = require('path')
-const user = require(path.join(__dirname, '..', 'models_index.js')).user
+const user = require(path.join(__dirname, '..', 'models', 'index.js')).user
 
 module.exports = {
 
