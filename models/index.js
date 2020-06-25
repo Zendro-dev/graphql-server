@@ -29,7 +29,7 @@ fs.readdirSync(__dirname + "/sql")
             model = require(`../${patches_patch}`).logic_patch(model);
         }
 
-        if(models[model.name])
+        if(model.name in models)
             throw Error(`Duplicated model name ${model.name}`);
 
         models[model.name] = model;
@@ -67,7 +67,7 @@ fs.readdirSync(__dirname + "/generic")
             model = require(`../${patches_patch}`).logic_patch(model);
         }
 
-        if(models[model.name])
+        if(model.name in models)
             throw Error(`Duplicated model name ${model.name}`);
 
         models[model.name] = model;
@@ -94,7 +94,7 @@ fs.readdirSync(__dirname + "/cenz-server")
             model = require(`../${patches_patch}`).logic_patch(model);
         }
 
-        if(models[model.name])
+        if(model.name in models)
             throw Error(`Duplicated model name ${model.name}`);
 
         models[model.name] = model;
@@ -116,7 +116,7 @@ fs.readdirSync(__dirname + "/distributed")
             model = require(`../${validator_patch}`).validator_patch(model);
         }
 
-        if(models[model.name])
+        if(model.name in models)
             throw Error(`Duplicated model name ${model.name}`);
 
         models[model.name] = model;
@@ -132,7 +132,7 @@ fs.readdirSync(__dirname + "/cassandra")
         console.log("loaded model: " + file);
         let model = require(`./${path.join("./cassandra", file)}`);
 
-        if(models[model.name])
+        if(model.name in models)
             throw Error(`Duplicated model name ${model.name}`);
 
         models[model.name] = model;
