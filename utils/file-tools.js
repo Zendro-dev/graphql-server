@@ -226,3 +226,64 @@ exports.parseCsvStream = async function(csvFilePath, model, delim, cols) {
     exports.deleteIfExists(addedFilePath);
   }
 };
+
+/**
+ * getIdArrayFromCSV - Reads a CSV file with records and returns an Array of the ID values of these records
+ * 
+ * @param {string} csvFilePath - The path where the csv file is stored.
+ * @param {object} model - Cassandra model, record will be created through this model.
+ * @param {string} delim - Set the field delimiter in the csv file. One or multiple character.
+ * @param {array|boolean|function} cols - Columns as in csv-parser options.(true if auto-discovered in the first CSV line).
+ * @return {Array<string>} An array of the ID values as strings
+ */
+/* exports.getIdArrayFromCSV = async function(csvFilePath, model, delim, cols) {
+  if (!delim) delim = ",";
+  if (typeof cols === 'undefined') cols = true;
+  let idAttribute = model.idAttribute();
+
+  let csvStream = awaitifyStream.createReader(
+    fs.createReadStream(csvFilePath).pipe(
+      csv_parse({
+        delimiter: delim,
+        columns: cols,
+        cast: true
+      })
+    )
+  );
+  let record;
+  let idArray = [];
+  while (null !== (record = await csvStream.readAsync())) {
+    idArray.push(record[`${idAttribute}`]);
+  }
+  return idArray;
+}*/
+
+/**
+ * JSONArrayToZIP - This method receives an Array of JSON strings and transforms them into a ZIP file containing
+ * a JSON file with these entries.
+ * 
+ * @param {Array<string>} rowsJson - The result rows in JSON string form
+ * @param {string} tmpPath - The path of the tmp file in use
+ * @return {string} The path of the created ZIP file
+ */
+/* exports.JSONArrayToZIP = async function(rowsJson, tmpPath) {
+  try {
+    let addedFilePath = tmpPath.substr(0, tmpPath.lastIndexOf(".")) + ".json";
+    let addedZipFilePath = tmpPath.substr(0, tmpPath.lastIndexOf(".")) + ".zip";
+    // Create an output file stream
+    let addedRecords = awaitifyStream.createWriter(
+      fs.createWriteStream(addedFilePath)
+    );
+
+    await rowsJson.forEach(async line => await addedRecords.writeAsync(line));
+    addedRecords.endAsync();
+
+    // zip comitted data and return a corresponding file path
+    let zipper = new admZip();
+    zipper.addLocalFile(addedFilePath);
+    zipper.writeZip(addedZipFilePath);
+    return addedZipFilePath;
+   } finally {
+    exports.deleteIfExists(addedFilePath);
+  }
+} */
