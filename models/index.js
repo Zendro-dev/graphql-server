@@ -3,6 +3,9 @@ const path = require('path');
 const Sequelize = require('sequelize');
 sequelize = require('../connection');
 
+const driver = require('cassandra-driver');
+const globals = require('../config/globals');
+
 var models = {};
 module.exports = models;
 
@@ -124,13 +127,22 @@ fs.readdirSync(__dirname + "/distributed")
 // **********************************************************************************
 // IMPORT CASSANDRA MODELS
 
+models.cassandraDriver = new driver.Client({
+    contactPoints: [globals.CASSANDRA_HOST + ':' + globals.CASSANDRA_PORT],
+    localDataCenter: 'datacenter1',
+    keyspace: 'sciencedb',
+    protocolOptions: {
+        port: globals.CASSANDRA_PORT
+    }
+});
+
 fs.readdirSync(__dirname + "/cassandra")
     .filter(function(file) {
         return (file.indexOf('.') !== 0) && (file !== 'index.js') && (file.slice(-3) === '.js');
     })
     .forEach(function(file) {
         console.log("loaded model: " + file);
-        let model = require(`./${path.join("./cassandra", file)}`);
+        let model = require(`./${path.join("./cassandra", file)}`).getAndConnectDataModelClass(models.cassandraDriver);
 
         if(model.name in models)
             throw Error(`Duplicated model name ${model.name}`);

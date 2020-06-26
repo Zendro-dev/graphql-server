@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
-const client = require('./cassandra-client');
+// const client = require('./cassandra-client');
+const models_index = require('../models/index');
+const client = models_index.cassandraDriver;
 
 async function checkCassandraConnection() {
   try {

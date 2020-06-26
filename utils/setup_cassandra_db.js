@@ -1,4 +1,5 @@
-const client = require('./cassandra-client');
+const models_index = require('../models/index');
+const client = models_index.cassandraDriver;
 const migrations_cassandra = require('../migrations-cassandra/index');
 
 async function createTableMigrated() {
