@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 
 // const client = require('./cassandra-client');
-const models_index = require('../models/index');
-const client = models_index.cassandraDriver;
+const { cassandraDriver } = require('../models/index');
 
 async function checkCassandraConnection() {
   try {
-    await client.connect();
-    if (client.connected) {
+    await cassandraDriver.connect();
+    if (cassandraDriver.connected) {
       console.log('****** Cassandra host is up! ******');
       return process.exit(0);
     } else {

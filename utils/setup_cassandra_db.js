@@ -1,10 +1,9 @@
-const models_index = require('../models/index');
-const client = models_index.cassandraDriver;
+const { cassandraDriver } = require('../models/index');
 const migrations_cassandra = require('../migrations-cassandra/index');
 
 async function createTableMigrated() {
     const tableQuery = "SELECT table_name FROM system_schema.tables WHERE keyspace_name='sciencedb';"
-    let result = await client.execute(tableQuery);
+    let result = await cassandraDriver.execute(tableQuery);
     console.log('Check for tables in keyspace "sciencedb" executed');
     let tablePresent = false;
     let migrateToDo = true;
@@ -16,7 +15,7 @@ async function createTableMigrated() {
     }
     if (tablePresent) {
         let queryMigration = "SELECT migrated_at FROM db_migrated;"
-        result = await client.execute(queryMigration);
+        result = await cassandraDriver.execute(queryMigration);
         if (result.rowLength >= 1) {
             migrateToDo = false;
             console.log('Migration table filled, no more migration to do.');
@@ -26,10 +25,10 @@ async function createTableMigrated() {
     if (migrateToDo) {
       await Promise.allSettled(Object.values(migrations_cassandra).map(async cassandraHandler => await cassandraHandler.up()));
       const createTable = "CREATE TABLE IF NOT EXISTS db_migrated ( migrated_at timeuuid PRIMARY KEY )";
-      await client.execute(createTable);
+      await cassandraDriver.execute(createTable);
       console.log('Migration table created');
       const rowInsert = "INSERT INTO db_migrated (migrated_at) VALUES (now())";
-      await client.execute(rowInsert);
+      await cassandraDriver.execute(rowInsert);
       console.log('Migration table filled.');
       return process.exit(0);
     }
