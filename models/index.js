@@ -18,6 +18,8 @@ const client = new driver.Client({
 var models = {};
 module.exports = models;
 
+models.cassandraDriver = client;
+
 // **********************************************************************************
 // IMPORT SEQUEILIZE MODELS
 
@@ -135,8 +137,6 @@ fs.readdirSync(__dirname + "/distributed")
     });
 // **********************************************************************************
 // IMPORT CASSANDRA MODELS
-
-models.cassandraDriver = client;
 
 fs.readdirSync(__dirname + "/cassandra")
     .filter(function(file) {
