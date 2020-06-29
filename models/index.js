@@ -6,6 +6,15 @@ sequelize = require('../connection');
 const driver = require('cassandra-driver');
 const globals = require('../config/globals');
 
+const client = new driver.Client({
+    contactPoints: [globals.CASSANDRA_HOST + ':' + globals.CASSANDRA_PORT],
+    localDataCenter: 'datacenter1',
+    keyspace: 'sciencedb',
+    protocolOptions: {
+        port: globals.CASSANDRA_PORT
+    }
+});
+
 var models = {};
 module.exports = models;
 
@@ -127,14 +136,7 @@ fs.readdirSync(__dirname + "/distributed")
 // **********************************************************************************
 // IMPORT CASSANDRA MODELS
 
-models.cassandraDriver = new driver.Client({
-    contactPoints: [globals.CASSANDRA_HOST + ':' + globals.CASSANDRA_PORT],
-    localDataCenter: 'datacenter1',
-    keyspace: 'sciencedb',
-    protocolOptions: {
-        port: globals.CASSANDRA_PORT
-    }
-});
+models.cassandraDriver = client;
 
 fs.readdirSync(__dirname + "/cassandra")
     .filter(function(file) {
