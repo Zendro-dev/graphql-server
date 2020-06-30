@@ -949,6 +949,34 @@ module.exports.vueTable = function(req, model, strAttributes) {
   }
 
   /**
+   * toGraphQLCassandraConnectionObject - translate an array of records into a GraphQL connection for Cassandra
+   *
+   * @param  {Array} paginatedRecords List of records to be translated
+   * @param  {Object} model            Record's type
+   * @param  {Boolean} hasNextPage      hasNextPage parameter for pagination info
+   * @return {type}                  description
+   */
+  module.exports.toGraphQLCassandraConnectionObject = function(paginatedRecords, model, hasNextPage) {
+    let edges = paginatedRecords.map(e => {
+      let temp_node = new model(e);
+      return {
+        node: temp_node,
+        cursor: temp_node.base64Enconde()
+      }
+    })
+
+    let pageInfo = {
+      hasNextPage: hasNextPage,
+      endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null
+    }
+
+    return {
+      edges,
+      pageInfo
+    }
+  }
+
+  /**
    * asyncForEach - Asynchronous for each
    *
    * @param  {Array} array    Array to transver

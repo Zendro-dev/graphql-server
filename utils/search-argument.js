@@ -106,10 +106,12 @@ module.exports = class search{
    * @param{string} idAttribute - The name of the ID attribute which isn't cast into apostrophes if it is a UUID
    * 
    * @param{boolean} allowFiltering - Set 'ALLOW FILTERING'
+   *
+   * @param{Array<string> | undefined} stringAttributeArray - An array of the string attributes, if present
    * 
    * @returns{string} Translated search instance into CQL string
    */
-  toCassandra(idAttribute, allowFiltering){
+  toCassandra(idAttribute, allowFiltering, stringAttributeArray){
     let searchsInCassandra = '';
 
     if((this.operator === undefined || (this.value === undefined && this.search === undefined))){
@@ -125,7 +127,9 @@ module.exports = class search{
       let value = this.value;
       if (this.field !== idAttribute && validate) {
         value = `'${this.value.toString()}'`;
-      } 
+      } else if (stringAttributeArray && stringAttributeArray.includes(this.field) && this.value.indexOf("'") !== 0) {
+        value = `'${this.value}'`;
+      }
       searchsInCassandra = this.field + this.transformCassandraOperator(this.operator) + value;
     } else if (this.operator === 'and') {
       searchsInCassandra = search.map(singleSearch => new search(singleSearch).toCassandra()).join(' and ');
