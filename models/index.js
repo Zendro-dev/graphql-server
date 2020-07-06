@@ -6,13 +6,21 @@ sequelize = require('../connection');
 const driver = require('cassandra-driver');
 const globals = require('../config/globals');
 
+var auth;
+
+if (globals.CASSANDRA_USERNAME && globals.CASSANDRA_PASSWORD) {
+  auth = new driver.auth.PlainTextAuthProvider(
+    globals.CASSANDRA_USERNAME, globals.CASSANDRA_PASSWORD);
+}
+
 const client = new driver.Client({
     contactPoints: [globals.CASSANDRA_HOST + ':' + globals.CASSANDRA_PORT],
     localDataCenter: 'datacenter1',
     keyspace: 'sciencedb',
     protocolOptions: {
         port: globals.CASSANDRA_PORT
-    }
+    },
+    authProvider: auth
 });
 
 var models = {};
@@ -71,7 +79,7 @@ fs.readdirSync(__dirname + "/generic")
         console.log("loaded model: " + file);
         let model = require(`./${path.join("./generic", file)}`);
 
-        let validator_patch = path.join('./validations', file);        
+        let validator_patch = path.join('./validations', file);
         if(fs.existsSync(validator_patch)){
             model = require(`../${validator_patch}`).validator_patch(model);
         }
