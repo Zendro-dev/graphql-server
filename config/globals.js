@@ -1,3 +1,15 @@
+var cassandraConfig = {}
+
+try {
+  cassandraConfig = require('./cassandra.json');
+} catch (e) {
+  if (e.code === 'MODULE_NOT_FOUND') {
+    console.warn('No config/cassandra.json file found, falling back to default settings.');
+  } else {
+    throw e; //some other error, better to not suppress it
+  }
+}
+
 module.exports = {
   LIMIT_RECORDS : process.env.LIMIT_RECORDS || 10000,
   PORT : process.env.PORT || 3000,
@@ -5,8 +17,11 @@ module.exports = {
   REQUIRE_SIGN_IN: process.env.REQUIRE_SIGN_IN || "true",
   MAX_TIME_OUT: process.env.MAX_TIME_OUT || 2000,
   POST_REQUEST_MAX_BODY_SIZE: process.env.POST_REQUEST_MAX_BODY_SIZE || '1mb',
-  CASSANDRA_HOST: process.env.CASSANDRA_HOST || 'cassandra',
-  CASSANDRA_PORT: process.env.CASSANDRA_PORT || 9042,
+  CASSANDRA_HOST: cassandraConfig.host || "127.0.0.1",
+  CASSANDRA_PORT: cassandraConfig.port || "7000",
+  CASSANDRA_KEYSPACE: cassandraConfig.keyspace || "sciencedb",
+  CASSANDRA_USERNAME: cassandraConfig.username || "cassandra",
+  CASSANDRA_PASSWORD: cassandraConfig.password || "cassandra",
   ERROR_LOG: process.env.ERROR_LOG || 'compact',
   MAIL_SERVICE: process.env.MAIL_SERVICE || "gmail",
   MAIL_HOST: process.env.MAIL_HOST || "smtp.gmail.com",
