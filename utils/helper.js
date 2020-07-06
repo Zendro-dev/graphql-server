@@ -895,6 +895,22 @@ module.exports.vueTable = function(req, model, strAttributes) {
     //This could be sped up by to O(n*m), m = # of remote servers by using merge sort
   }
 
+  /**
+   * orderRecordsWithCassandra - Javascript function for ordering of records based on Cassandra tokens with non-Cassandra records in front,
+   * which are ordered by a given field in ascending order.
+   * 
+   * @param {Array} matchingRecords List of records to be ordered
+   * @param {String?} nonCassandraOrderField Field in non-Cassandra tables which to order by. If not given, all records must be Cassandra records.
+   * @return {Array} ordered list of records
+   */
+  module.exports.orderRecordsWithCassandra = function(matchingRecords, nonCassandraOrderField) {
+    if (module.exports.isNotUndefinedAndNotNull(nonCassandraOrderField)) {
+      return _.orderBy(matchingRecords, [(o) => {return (o.toke && BigInt(o.toke)) || BigInt("-9999999999999999999999")}, nonCassandraOrderField]);
+    } else {
+      return _.orderBy(matchingRecords, [(o) => {return BigInt(o.toke)}]);
+    }
+  }
+
 
   /**
   * paginateRecordsCursor - post-precossing pagination of ordered records (forward)
