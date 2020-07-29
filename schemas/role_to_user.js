@@ -6,17 +6,17 @@ module.exports = `
     id: ID
     """
     @original-field
-    
+
     """
     userId: Int
 
     """
     @original-field
-    
+
     """
     roleId: Int
 
-      
+
     }
 type Role_to_userConnection{
   edges: [Role_to_userEdge]
@@ -46,7 +46,8 @@ type Role_to_userEdge{
   }
   input searchRole_to_userInput {
     field: role_to_userField
-    value: typeValue
+    value: String!
+    valueType: InputType
     operator: Operator
     search: [searchRole_to_userInput]
   }

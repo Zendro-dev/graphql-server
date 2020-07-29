@@ -16,9 +16,9 @@ module.exports = class search{
    * @param  {object} search  recursive search instance.
    * @return {object}          instace of search class.
    */
-  constructor({field, value, operator, search}){
+  constructor({field, value, valueType, operator, search}){
     this.field = field;
-    this.value = this.constructor.parseValue(value);
+    this.value = this.constructor.parseValue(value, valueType);
     this.operator = operator;
     this.search = search
   }
@@ -30,14 +30,14 @@ module.exports = class search{
    * @param  {object} val value object to parse.
    * @return {(array|string|number)}     Parsed value
    */
-  static parseValue(val){
-    if(val!==undefined)
+  static parseValue(val, type){
+    if(val !== undefined)
     {
-      if(val.type === "Array")
+      if(type === "Array")
       {
-        return val.value.split(",");
+        return val.split(",");
       }else{
-        return val.value;
+        return val;
       }
     }
   }
@@ -68,7 +68,7 @@ module.exports = class search{
         let new_sa = new search(sa);
         return new_sa.toSequelize();
       });
-      
+
     }else{
        searchsInSequelize[this.field] = {
          [Op[this.operator]] : this.search.map(sa => {

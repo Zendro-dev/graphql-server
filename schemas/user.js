@@ -6,17 +6,17 @@ module.exports = `
     id: ID
     """
     @original-field
-    
+
     """
     email: String
 
     """
     @original-field
-    
+
     """
     password: String
 
-      
+
     """
     @search-request
     """
@@ -32,7 +32,7 @@ module.exports = `
     @count-request
     """
     countFilteredRoles(search: searchRoleInput) : Int
-  
+
     }
 type UserConnection{
   edges: [UserEdge]
@@ -62,7 +62,8 @@ type UserEdge{
   }
   input searchUserInput {
     field: userField
-    value: typeValue
+    value: String!
+    valueType: InputType
     operator: Operator
     search: [searchUserInput]
   }
