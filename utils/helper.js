@@ -568,8 +568,8 @@ module.exports.vueTable = function(req, model, strAttributes) {
 
         /**
          * Add particular search argument provided as input parámeter.
-         * The filters on this serch argument will be the last to apply. 
-         * 
+         * The filters on this serch argument will be the last to apply.
+         *
          * On non-generic version, this step is done outside this function.
          */
         "search" : search,
@@ -599,14 +599,14 @@ module.exports.vueTable = function(req, model, strAttributes) {
            * Set
            * condition (1) in the case of idAttribute or
            * condition (2.a or 2.b) for other fields.
-           * 
+           *
            * Equivalent to non-generic segment:
            *    { [order[i][0] ] : { [Op[operator]]: cursor[ order[i][0] ] } }
            */
           "field": order[i][0],
           "value": {"value": cursor[order[i][0]]},
           "operator": operator,
-          
+
           //and:
 
           "search": module.exports.addSearchField({
@@ -615,7 +615,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
              * Set
              * condition (1) in the case of idAttribute or
              * condition (2.a) for other fields.
-             * 
+             *
              * Equivalent to non-generic segment:
              *    { [order[i][0]]: { [Op[strict_operator]]: cursor[ order[i][0] ]} },
              */
@@ -628,7 +628,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
             /**
              * Add the previous produced conditions.
              * This will include the base step condition as the most right condition.
-             * 
+             *
              * Equivalent to non-generic segment:
              *    where_statement  ]
              */
@@ -636,7 +636,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
 
             /**
              * Set inner recursive search operator.
-             * 
+             *
              * Equivalent to non-generic segment:
              *    { [Op['or']] :[
              */
@@ -644,7 +644,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
 
           /**
            * Set outer recursive search operator.
-           * 
+           *
            * Equivalent to non-generic segment:
            *    [Op['and']] :[
            */
@@ -750,8 +750,8 @@ module.exports.vueTable = function(req, model, strAttributes) {
 
         /**
          * Add particular search argument provided as input parámeter.
-         * The filters on this serch argument will be the last to apply. 
-         * 
+         * The filters on this serch argument will be the last to apply.
+         *
          * On non-generic version, this step is done outside this function.
          */
         "search" : search,
@@ -781,14 +781,14 @@ module.exports.vueTable = function(req, model, strAttributes) {
            * Set
            * condition (1) in the case of idAttribute or
            * condition (2.a or 2.b) for other fields.
-           * 
+           *
            * Equivalent to non-generic segment:
            *    { [order[i][0] ] : { [Op[operator]]: cursor[ order[i][0] ] } }
            */
           "field": order[i][0],
           "value": {"value": cursor[order[i][0]]},
           "operator": operator,
-          
+
           //and:
 
           "search": module.exports.addSearchField({
@@ -797,7 +797,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
              * Set
              * condition (1) in the case of idAttribute or
              * condition (2.a) for other fields.
-             * 
+             *
              * Equivalent to non-generic segment:
              *    { [order[i][0]]: { [Op[strict_operator]]: cursor[ order[i][0] ]} },
              */
@@ -810,7 +810,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
             /**
              * Add the previous produced conditions.
              * This will include the base step condition as the most right condition.
-             * 
+             *
              * Equivalent to non-generic segment:
              *    where_statement  ]
              */
@@ -818,7 +818,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
 
             /**
              * Set inner recursive search operator.
-             * 
+             *
              * Equivalent to non-generic segment:
              *    { [Op['or']] :[
              */
@@ -826,7 +826,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
 
           /**
            * Set outer recursive search operator.
-           * 
+           *
            * Equivalent to non-generic segment:
            *    [Op['and']] :[
            */
@@ -839,19 +839,19 @@ module.exports.vueTable = function(req, model, strAttributes) {
 
     /**
    * checkExistence - Get the IDs (out of a given list) that are not in use in a given model
-   * 
+   *
    * @param{Array | object} ids_to_check The IDs that are to be checked, as an array or as a single value
    * @param{object} model The model for which the IDs shall be checked
    * @returns{Promise<boolean>} Are all IDs in use?
    */
   module.exports.checkExistence = async function(ids_to_check, model){
     //check
-    if (!module.exports.isNotUndefinedAndNotNull(ids_to_check)) { 
+    if (!module.exports.isNotUndefinedAndNotNull(ids_to_check)) {
       throw new Error(`Invalid arguments on checkExistence(), 'ids' argument should not be 'null' or 'undefined'`);
     }
     //check existence by count
     let ids = Array.isArray(ids_to_check) ? ids_to_check : [ ids_to_check ];
-    let searchArg = {"field":model.idAttribute(),"value":{"type":"Array","value":ids.toString()},"operator":"in"};
+    let searchArg = {"field":model.idAttribute(),valueType:"Array",value:ids.toString(),"operator":"in"};
     try {
       if (module.exports.isNotUndefinedAndNotNull(model.registeredAdapters)) {
         let allResponsibleAdapters = ids.map(id => model.registeredAdapters[model.adapterForIri(id)]);
@@ -871,7 +871,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
 
   /**
    * validateExistence - Make sure that all given IDs correspond to existing records in a given model
-   * 
+   *
    * @param{Array | object} idsToExist The IDs that are supposed to exist, as an array or as a single value
    * @param{object} model The model for which the IDs should exist
    * @throws If there is an ID given without a corresponding record in the model, in which case the first ID not to exist is given in the error message
@@ -997,10 +997,10 @@ module.exports.vueTable = function(req, model, strAttributes) {
   }
 
   /**
-   * Returns a new array instance with the set of adapters that remains after 
+   * Returns a new array instance with the set of adapters that remains after
    * remove all excluded adapters, specified on the search.excludeAdapterNames
-   * input, from the @adapters array. 
-   * 
+   * input, from the @adapters array.
+   *
    * This function does not modify the @adapter param, but instead, returns a new
    * array instance.
    *
@@ -1014,20 +1014,20 @@ module.exports.vueTable = function(req, model, strAttributes) {
    */
   module.exports.removeExcludedAdapters = function(search, adapters) {
     let result = Array.from(adapters);
-    
+
     //check: @adapters
     if(adapters.length === 0) {
       return [];
     }//else
-    
+
     //check: @search
     if((!search || typeof search !== 'object') //has not search object
       || (!search.excludeAdapterNames //or has search object but has not exclusions
-          || !Array.isArray(search.excludeAdapterNames) 
+          || !Array.isArray(search.excludeAdapterNames)
           || search.excludeAdapterNames.length === 0)) {
       return result;
     }//else
-    
+
     //do: exclusion
     let i = 0;
     while (i < result.length) {
@@ -1047,12 +1047,12 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * the @excludeAdapterNames on search object.
    *
    * @param {object} search - Search object.
-   * @param {string} currentAdapterName - String of the current adapterName. 
+   * @param {string} currentAdapterName - String of the current adapterName.
    * @param {array} registeredAdapters - Array of registered adapters for the calling ddm.
    *
-   * @return {object} New search object that includes the excluded adapters on the 
+   * @return {object} New search object that includes the excluded adapters on the
    * attribute @excludeAdapterNames. This functions does not modify the @search object,
-   * instead a new one is returned. 
+   * instead a new one is returned.
    */
   module.exports.addExclusions = function(search, currentAdapterName, registeredAdapters) {
     let nsearch = {};
@@ -1085,7 +1085,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
     }
 
     /*
-     * append all @registeredAdapters, except the @currentAdapter, 
+     * append all @registeredAdapters, except the @currentAdapter,
      * to search.excludeAdapterNames array.
      */
     registeredAdapters.forEach(a => {
@@ -1106,7 +1106,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @param {object} context - The GraphQL context passed to the resolver.
    * @param {array} resultObj - Connection- or CountObj returned by ddm readMany.
    *
-   * @return {array} Returns the changed resultObj and context with the added benignErrors 
+   * @return {array} Returns the changed resultObj and context with the added benignErrors
    */
   module.exports.writeBenignErrors = function(authorizationCheck, context, resultObj) {
     //check adapter authorization Errors
@@ -1124,11 +1124,11 @@ module.exports.vueTable = function(req, model, strAttributes) {
   }
 
   /**
-   * addSearchField - Creates a new search object which one will include the new search 
+   * addSearchField - Creates a new search object which one will include the new search
    * instance (@field, @value, @operator) with values passed as arguments.
-   * 
+   *
    * This function preserves the attribute @excludeAdapterNames if exists on the @search argument.
-   * 
+   *
    * This function does not modifies the @search object received, instead creates a new one.
    *
    * @param  {string} field Field to filter. Must be defined.
@@ -1142,7 +1142,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
    */
   module.exports.addSearchField = function ({search, field, value, operator}, recursiveOperator) {
     let nsearch = {};
-    let recursiveOp = recursiveOperator ? recursiveOperator : 'and'; 
+    let recursiveOp = recursiveOperator ? recursiveOperator : 'and';
 
     //check
     if(operator === undefined || field === undefined || value === undefined) {
@@ -1151,7 +1151,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
 
     /**
      * Case 1: @search is undefined.
-     * 
+     *
      * Create a new search object with received parameters.
      */
     if(search === undefined || search === null) {
@@ -1161,20 +1161,20 @@ module.exports.vueTable = function(req, model, strAttributes) {
         "operator": operator
       };
     } else {
-      
+
       //check
       if(typeof search !== 'object') {
         throw new Error('Illegal "@search" argument type, it must be an object.');
       }
-      
+
       /**
        * Case 2: @search is defined but has not search-operation attributes defined.
-       * 
+       *
        * Create a new search object with received parameters and preserve @excludeAdapterNames
        * attribute.
        */
       if(search.operator === undefined || (search.value === undefined && search.search === undefined)) {
-        
+
         search = {
           "field": field,
           "value": value,
@@ -1184,14 +1184,14 @@ module.exports.vueTable = function(req, model, strAttributes) {
       } else {
         /**
          * Case 3: @search is defined and has search-operation attributes defined.
-         * 
+         *
          * Create a new recursive search object with received parameters and preserve @excludeAdapterNames
          * attribute.
          */
         let csearch = {...search};
         let excludeAdapterNames = csearch.excludeAdapterNames;
         delete csearch.excludeAdapterNames;
-        
+
         nsearch = {
           "operator": recursiveOp,
           "search": [{
@@ -1202,13 +1202,13 @@ module.exports.vueTable = function(req, model, strAttributes) {
           "excludeAdapterNames": excludeAdapterNames
         };
       }
-    }  
+    }
     return nsearch;
   }
 
   /**
    * isNonEmtpyArray - Test a value for being a non-empty array
-   * 
+   *
    * @param {any} a value to be tested for being a non-empty array
    * @returns {boolean} result
    */
@@ -1296,7 +1296,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
         let storageType = targetModel.definition.storageType;
 
         // Look into the definition of the associated data model and ask for its storage type.
-        // TWO CASES: 
+        // TWO CASES:
         // 1) target model storage type: NON distributed (any other)
         if (storageType !== 'distributed-data-model') {
           return await permissions.reduce(async (prev, curr) => {
@@ -1319,19 +1319,19 @@ module.exports.vueTable = function(req, model, strAttributes) {
           if (module.exports.isNonEmptyArray(newErrors)) {
             throw new Error(newErrors[0]);
           }
-          return acc && newErrors !== []; 
+          return acc && newErrors !== [];
         }, Promise.resolve(true))
       } else {
        return acc
-      
+
       }
     }, Promise.resolve(true));
   }
 
-  /** 
+  /**
    * validateAssociationArgsExistence - Receives arrays of ids on @input, and checks if these ids exists. Returns true
    * if all received ids exist, and throws an error if at least one of the ids does not exist.
-   * 
+   *
    * @param  {object} input   Object with sanitized entries of the form: <add>Association:[id1, ..., idn].
    * @param  {object} context Object with mutation context attributes.
    * @param  {object} associationArgsDef  The definition of the association arguments
@@ -1342,7 +1342,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
   module.exports.validateAssociationArgsExistence = async function(input, context, associationArgsDef, modelsIndex = models_index) {
     await Object.keys(associationArgsDef).reduce(async function(prev, curr){
       let acc = await prev;
-      
+
       //get ids (Int or Array)
       let currAssocIds = input[curr];
 
@@ -1369,15 +1369,15 @@ module.exports.vueTable = function(req, model, strAttributes) {
 
   }
 
-  /** 
+  /**
    * checkAndAdjustRecordLimitForCreateUpdate - If the number of records affected by the input
    * exceeds the current value of recordLimit throws an error, otherwise adjusts context.recordLimit
    * and returns totalCount.
-   * 
+   *
    * @param  {object} input   Input Object.
    * @param  {object} context Object with context attributes.
    * @param  {object} associationArgsDef  Object with entries of the form {'<add>Association' : model}
-   * @return {int} If the number of records affected by the input exceeds the current value of 
+   * @return {int} If the number of records affected by the input exceeds the current value of
    * recordLimit throws an error, otherwise adjusts context.recordLimit and returns totalCount.
    */
   module.exports.checkAndAdjustRecordLimitForCreateUpdate = function(input, context, associationArgsDef) {
@@ -1403,12 +1403,12 @@ module.exports.vueTable = function(req, model, strAttributes) {
       }
     }, 0);
   }
-  
-  /** 
+
+  /**
    * checkCountAndReduceRecordLimitHelper - given a count, checks whether it exceeds the
    * defined record limit. Throws desriptive error if it exceeds. If not reduces the record Limit
    * in the GraphQL context.
-   * 
+   *
    * @param {Integer} count count to reduce from the recordsLimit
    * @param {Object} context The GraphQL context passed to the resolver
    * @param {String} resolverName The name of the resolver function
@@ -1420,12 +1420,12 @@ module.exports.vueTable = function(req, model, strAttributes) {
     context.recordsLimit -= count;
   }
 
-  /** 
+  /**
    * checkSearchArgument - check if the @search argument is a valid object.
    * The @search argument can be undefined or null, but if not, then should be an object.
    * Note: this function does not check the validity of the @search object.
    * If the @search argument is not valid, this function will throw an error.
-   * 
+   *
    * @param {object}  search  Search argument for filtering records
    */
   module.exports.checkSearchArgument = function(search) {
@@ -1435,63 +1435,63 @@ module.exports.vueTable = function(req, model, strAttributes) {
     } else return;
   }
 
-  /** 
+  /**
    * checkCursorBasedPaginationArgument - check if the @pagination argument is a valid object
    * in terms of a cursor-based pagination specification.
    * The @pagination argument can be undefined or null, but if not, then should be an object
    * that complies with the cursor-based pagination constraints.
    * If the @pagination argument is not valid, this function will throw an error.
-   * 
+   *
    * @param {object}  pagination  Cursor-based pagination object.
    */
   module.exports.checkCursorBasedPaginationArgument = function(pagination) {
-    let argsValid = (pagination === undefined || pagination === null) 
-    || (typeof pagination === 'object' && pagination.first && !pagination.before && !pagination.last) 
+    let argsValid = (pagination === undefined || pagination === null)
+    || (typeof pagination === 'object' && pagination.first && !pagination.before && !pagination.last)
     || (typeof pagination === 'object' && pagination.last && !pagination.after && !pagination.first);
     if (!argsValid) {
       throw new Error('Illegal cursor based pagination arguments. Use either "first" and optionally "after", or "last" and optionally "before"!');
     } else return;
   }
 
-  /** 
+  /**
    * isForwardPagination - calculates the direction of the cursor based pagination based on the
    * @pagination argument received. Returns true if the direction is forward or false if it is
    * backward.
-   * 
+   *
    * @param {object}  pagination  Cursor-based pagination object.
    */
   module.exports.isForwardPagination = function(pagination) {
     return (!pagination || pagination.first);
   }
 
-  /** 
+  /**
    * base64Decode - returns the given @cursor base64-decoded.
-   * 
+   *
    * @param {object}  cursor  base64 encoded cursor.
    */
   module.exports.base64Decode = function(cursor){
     return Buffer.from(cursor, 'base64').toString('utf-8');
   }
 
-  /** 
+  /**
    * getGenericPaginationValues - Given a pagination argument, that can be
    * either a limit-offset or a cursor-base type, calculates generic pagination
    * values: limit, offset and search.
-   * 
+   *
    * @param {object} pagination  If limit-offset pagination, this object will include 'offset' and 'limit' properties
    * to get the records from and to respectively. If cursor-based pagination, this object will include 'first' or 'last'
    * properties to indicate the number of records to fetch, and 'after' or 'before' cursors to indicate from which record
    * to start fetching.
    * @param {string} internalIdName Name of the internal id attribute of the model being queried.
    * This argument is required.
-   * @param {object} inputPaginationValues Input pagination values: {limit, offset, search, order}. 
+   * @param {object} inputPaginationValues Input pagination values: {limit, offset, search, order}.
    * If @pagination object is provided, new values for @limit and @offset will be calculated, and if the
    * @pagination argument is cursor-based type, also a new @search value will be calculated based in the
-   * pagination input. 
+   * pagination input.
    * Note: this object is not modified by this function, instead, a new object is created and
    * initialized, either with default values or with the input values in this argument if any.
-   * 
-   * @return {limit, offset, search}  A new object with the calculated generic pagination values. 
+   *
+   * @return {limit, offset, search}  A new object with the calculated generic pagination values.
    * Note: If no pagination is received, the returned object will contain either default values or values
    * copied from the @inputPaginationValues argument, if any.
    */
@@ -1554,10 +1554,10 @@ module.exports.vueTable = function(req, model, strAttributes) {
     return {limit, offset, search};
   }
 
-  /** 
+  /**
    * getEffectiveRecordsCount - calculates the effective record count, given a count-query result and
    * limit and offset arguments.
-   * 
+   *
    * @param {int} count   Count result of a count-query.
    * @param {int} limit   A generic pagination limit argument.
    * @param {int} offset  A generic pagination offset argument.
@@ -1565,4 +1565,3 @@ module.exports.vueTable = function(req, model, strAttributes) {
   module.exports.getEffectiveRecordsCount = function(count, limit, offset) {
     return (limit !== undefined) ? Math.min( count-offset, limit ) : count-offset;
   }
-
