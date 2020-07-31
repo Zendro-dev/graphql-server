@@ -11,7 +11,8 @@ module.exports = class search{
    * constructor - Creates an instace with the given arguments
    *
    * @param  {string} field   field to filter.
-   * @param  {object} value    value contains type(i.e. array, string) and actual value to match in the filter. Must be defined.
+   * @param  {string} value   value is the actual value to match in the filter. Must be defined.
+   * @param  {string} valueType the expected value type (i.e. array, string)
    * @param  {string} operator operator used to perform the filter. Must be defined.
    * @param  {object} search  recursive search instance.
    * @return {object}          instace of search class.
