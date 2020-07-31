@@ -563,7 +563,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
        */
       let search_field = module.exports.addSearchField({
         "field": order[last_index][0],
-        "value": {"value": cursor[order[last_index][0]]},
+        "value": cursor[order[last_index][0]],
         "operator": operator,
 
         /**
@@ -604,7 +604,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
            *    { [order[i][0] ] : { [Op[operator]]: cursor[ order[i][0] ] } }
            */
           "field": order[i][0],
-          "value": {"value": cursor[order[i][0]]},
+          "value": cursor[order[i][0]],
           "operator": operator,
 
           //and:
@@ -620,7 +620,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
              *    { [order[i][0]]: { [Op[strict_operator]]: cursor[ order[i][0] ]} },
              */
             "field": order[i][0],
-            "value": {"value": cursor[order[i][0]]},
+            "value": cursor[order[i][0]],
             "operator": strict_operator,
 
             //or:
@@ -745,7 +745,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
        */
       let search_field = module.exports.addSearchField({
         "field": order[last_index][0],
-        "value": {"value": cursor[order[last_index][0]]},
+        "value": cursor[order[last_index][0]],
         "operator": operator,
 
         /**
@@ -786,7 +786,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
            *    { [order[i][0] ] : { [Op[operator]]: cursor[ order[i][0] ] } }
            */
           "field": order[i][0],
-          "value": {"value": cursor[order[i][0]]},
+          "value": cursor[order[i][0]],
           "operator": operator,
 
           //and:
@@ -802,7 +802,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
              *    { [order[i][0]]: { [Op[strict_operator]]: cursor[ order[i][0] ]} },
              */
             "field": order[i][0],
-            "value": {"value": cursor[order[i][0]]},
+            "value": cursor[order[i][0]],
             "operator": strict_operator,
 
             //or:
