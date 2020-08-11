@@ -1599,15 +1599,19 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @param  {object} association_names Association names, both ends
    * @param  {object} input             Full input of the record to be created or updated
    * @param  {ID} id                   Id of the current record
+   *
+   * @returns {Boolean} returns true if the self association is valid, false otherwise
    */
-  module.exports.checkSelfAssociations = function( association_names,input, id){
-    //if one of the association is not even mentioned in the input, no contradiction can happen
-    if(input[ association_names.to_many] === undefined || input[association_names.to_one] === undefined
-      || input[ association_names.to_many] === null || input[association_names.to_one] === null ){
-      return;
-    }
-    //check contradiction
-    if( input[ association_names.to_many ].includes(id) && input[ association_names.to_one ] !== id ){
-      throw new Error("Validation error: Self association is contradictory, please check your input");
-    }
-  }
+   module.exports.checkSelfAssociations = function( association_names,input, id, benignErrorReporter){
+     //if one of the association is not even mentioned in the input, no contradiction can happen
+     let both_ends_defined = input[ association_names.to_many] !== undefined &&
+                       input[association_names.to_one] !== undefined &&
+                       input[ association_names.to_many] !== null &&
+                       input[association_names.to_one] !== null ;
+
+     if( both_ends_defined && input[ association_names.to_many ].includes(id) && input[ association_names.to_one ] !== id ){
+       benignErrorReporter.reportError(new Error("Validation error: Self association is contradictory, please check your input") );
+       return false;
+     }
+     return true;
+   }
