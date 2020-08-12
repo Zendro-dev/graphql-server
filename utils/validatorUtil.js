@@ -139,7 +139,7 @@ module.exports.addDateTimeAjvKeywords = function(ajv) {
     compile: function(schema, parentSchema) {
       return async function(data) {
         try {
-          gd.GraphQLTime.serialize(data);
+          gd.GraphQLDateTime.serialize(data);
           return true
         } catch (e) {
           return new Promise(function(resolve, reject) {
