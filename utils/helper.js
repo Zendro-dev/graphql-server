@@ -1444,6 +1444,12 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @param {object}  pagination  Cursor-based pagination object.
    */
   module.exports.checkCursorBasedPaginationArgument = function(pagination) {
+    // check for negative pagination. Since we have to increase the LIMIT in the database query by 1,
+    // theoretically the arugment "pagination:{first:-1}" would be valid.
+    if(typeof pagination === 'object' && (pagination.first < 0 || pagination.last < 0)){
+      throw new Error('LIMIT must not be negative')
+    }
+
     let argsValid = (pagination === undefined || pagination === null) 
     || (typeof pagination === 'object' && pagination.first && !pagination.before && !pagination.last) 
     || (typeof pagination === 'object' && pagination.last && !pagination.after && !pagination.first);
