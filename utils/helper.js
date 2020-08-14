@@ -1759,12 +1759,14 @@ module.exports.vueTable = function(req, model, strAttributes) {
   }
 
   module.exports.buildEdgeObject = function(records){
+    let edges = [];
     if (records.length > 0) {
-      return records.map(record => {
+      edges = records.map(record => {
         return {
           node: record,
           cursor: record.base64Enconde()
         }
       });
     }
+    return edges;
   }
