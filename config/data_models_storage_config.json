@@ -18,5 +18,41 @@
       "dialect": "postgres",
       "operatorsAliases": false
     }
+  },
+  "test": {
+    "sql": {
+      "username": "sciencedb",
+      "password": "sciencedb",
+      "database": "sciencedb_test",
+      "host": "postgres",
+      "dialect": "postgres",
+      "operatorsAliases": false
+    },
+    "locations_sql": {
+      "username": "sciencedb",
+      "password": "sciencedb",
+      "database": "sciencedb_test",
+      "host": "postgres",
+      "dialect": "postgres",
+      "operatorsAliases": false
+    }
+  },
+  "production": {
+    "sql": {
+      "username": "sciencedb",
+      "password": "sciencedb",
+      "database": "sciencedb_production",
+      "host": "postgres",
+      "dialect": "postgres",
+      "operatorsAliases": false
+    },
+    "locations_sql": {
+      "username": "sciencedb",
+      "password": "sciencedb",
+      "database": "sciencedb_production",
+      "host": "postgres",
+      "dialect": "postgres",
+      "operatorsAliases": false
+    }
   }
 }
