@@ -1,0 +1,22 @@
+{
+  "development": {
+    "sql": {
+      "username": "sciencedb",
+      "password": "sciencedb",
+      "database": "sciencedb_development",
+      "host": "localhost",
+      "port": "5432",
+      "dialect": "postgres",
+      "operatorsAliases": false
+    },
+    "locations_sql": {
+      "username": "sciencedb",
+      "password": "sciencedb",
+      "database": "sciencedb_development",
+      "host": "localhost",
+      "port": "2346",
+      "dialect": "postgres",
+      "operatorsAliases": false
+    }
+  }
+}
