@@ -1,58 +1,29 @@
 {
-  "development": {
-    "sql": {
-      "username": "sciencedb",
-      "password": "sciencedb",
-      "database": "sciencedb_development",
-      "host": "localhost",
-      "port": "5432",
-      "dialect": "postgres",
-      "operatorsAliases": false
-    },
-    "locations_sql": {
-      "username": "sciencedb",
-      "password": "sciencedb",
-      "database": "sciencedb_development",
-      "host": "localhost",
-      "port": "2346",
-      "dialect": "postgres",
-      "operatorsAliases": false
-    }
+  "sql": {
+    "username": "sciencedb",
+    "password": "sciencedb",
+    "database": "sciencedb_development",
+    "host": "127.0.0.1",
+    "port": "5432",
+    "dialect": "postgres",
+    "operatorsAliases": false
   },
-  "test": {
-    "sql": {
-      "username": "sciencedb",
-      "password": "sciencedb",
-      "database": "sciencedb_test",
-      "host": "postgres",
-      "dialect": "postgres",
-      "operatorsAliases": false
-    },
-    "locations_sql": {
-      "username": "sciencedb",
-      "password": "sciencedb",
-      "database": "sciencedb_test",
-      "host": "postgres",
-      "dialect": "postgres",
-      "operatorsAliases": false
-    }
+  "sql_location": {
+    "username": "sciencedb",
+    "password": "sciencedb",
+    "database": "sciencedb_development",
+    "host": "127.0.0.1",
+    "port": "2345",
+    "dialect": "postgres",
+    "operatorsAliases": false
   },
-  "production": {
-    "sql": {
-      "username": "sciencedb",
-      "password": "sciencedb",
-      "database": "sciencedb_production",
-      "host": "postgres",
-      "dialect": "postgres",
-      "operatorsAliases": false
-    },
-    "locations_sql": {
-      "username": "sciencedb",
-      "password": "sciencedb",
-      "database": "sciencedb_production",
-      "host": "postgres",
-      "dialect": "postgres",
-      "operatorsAliases": false
-    }
+  "sql_people": {
+    "username": "sciencedb",
+    "password": "sciencedb",
+    "database": "sciencedb_development",
+    "host": "127.0.0.1",
+    "port": "2346",
+    "dialect": "postgres",
+    "operatorsAliases": false
   }
 }
