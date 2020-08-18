@@ -14,9 +14,8 @@ const checkAuthorization = require('./utils/check-authorization');
 const helper = require('./utils/helper');
 const nodejq = require('node-jq')
 const {JSONPath} = require('jsonpath-plus');
-const graphqlFormatError = require('./node_modules/graphql/error/formatError');
 const errors = require('./utils/errors');
-const { printError } = require('graphql');
+const { printError, formatError } = require('graphql');
 
 var {
   graphql, buildSchema
@@ -271,7 +270,7 @@ app.post('/meta_query', cors(), async (req, res, next) => {
      }
  }
 } catch (error) {
- res.json( { data: null, errors: [graphqlFormatError.formatError(error)] });
+ res.json( { data: null, errors: [formatError(error)] });
 }
 });
 
