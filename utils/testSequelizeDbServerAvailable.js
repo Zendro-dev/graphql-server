@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
-const path = require('path')
-const Sequelize = require(path.join(__dirname, '..', 'connection.js'))
+const { getConnection } = require('../connection')
+
+const Sequelize = getConnection('sql');
 
 async function checkConnection() {
   try {
