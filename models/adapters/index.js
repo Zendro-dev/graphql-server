@@ -23,11 +23,10 @@ getModulesSync(__dirname).forEach(file => {
       break;
 
     case 'sql-adapter':
-      const { database, storageType } = adapter.definition;
-      adapters[adapter.adapterName] = adapter.init(
-        getConnection(database || storageType),
-        Sequelize
-      );
+      const { database } = adapter.definition;
+      const connection = getConnection(database || 'sql');
+      if (!connection) throw new ConnectionError(adapter.definition);
+      adapters[adapter.adapterName] = adapter.init(connection, Sequelize);
       break;
 
     case 'default':

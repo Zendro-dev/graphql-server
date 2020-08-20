@@ -1,8 +1,10 @@
-const { existsSync }     = require('fs');
-const { join }           = require('path');
-const { Sequelize }      = require('sequelize');
-const { getConnection }  = require('../connection');
+const { existsSync } = require('fs');
+const { join }       = require('path');
+const { Sequelize }  = require('sequelize');
+//
+const { getConnection, ConnectionError } = require('../connection');
 const { getModulesSync } = require('../utils/module-helpers');
+
 
 var models = {};
 module.exports = models;
@@ -18,21 +20,22 @@ getModulesSync(__dirname + "/sql").forEach(file => {
   console.log("loaded model: " + file);
   let modelFile = require(join(__dirname,'sql', file));
 
-  const { database, storageType } = modelFile.definition;
-  let model = modelFile.init(getConnection(database || storageType), Sequelize);
+  const { database } = modelFile.definition;
+  const connection = getConnection(database || 'sql');
+  if (!connection) throw new ConnectionError(modelFile.definition);
+  let model = modelFile.init(connection, Sequelize);
 
   let validator_patch = join('./validations', file);
   if(existsSync(validator_patch)){
-      model = require(`../${validator_patch}`).validator_patch(model);
+    model = require(`../${validator_patch}`).validator_patch(model);
   }
 
   let patches_patch = join('./patches', file);
   if(existsSync(patches_patch)){
-      model = require(`../${patches_patch}`).logic_patch(model);
+    model = require(`../${patches_patch}`).logic_patch(model);
   }
 
-  if(model.name in models)
-      throw Error(`Duplicated model name ${model.name}`);
+  if(model.name in models) throw Error(`Duplicated model name ${model.name}`);
 
   models[model.name] = model;
 });
@@ -42,9 +45,9 @@ getModulesSync(__dirname + "/sql").forEach(file => {
  * function of the model files
  */
 Object.keys(models).forEach(function(modelName) {
-    if (models[modelName].associate) {
-        models[modelName].associate(models);
-    }
+  if (models[modelName].associate) {
+    models[modelName].associate(models);
+  }
 });
 
 /**
@@ -64,16 +67,15 @@ getModulesSync(__dirname + "/generic").forEach(file => {
 
   let validator_patch = join('./validations', file);
   if(existsSync(validator_patch)){
-      model = require(`../${validator_patch}`).validator_patch(model);
+    model = require(`../${validator_patch}`).validator_patch(model);
   }
 
   let patches_patch = join('./patches',file);
   if(existsSync(patches_patch)){
-      model = require(`../${patches_patch}`).logic_patch(model);
+    model = require(`../${patches_patch}`).logic_patch(model);
   }
 
-  if(model.name in models)
-      throw Error(`Duplicated model name ${model.name}`);
+  if(model.name in models) throw Error(`Duplicated model name ${model.name}`);
 
   models[model.name] = model;
 
@@ -89,16 +91,15 @@ getModulesSync(__dirname + "/zendro-server").forEach(file => {
 
   let validator_patch = join('./validations', file);
   if(existsSync(validator_patch)){
-      model = require(`../${validator_patch}`).validator_patch(model);
+    model = require(`../${validator_patch}`).validator_patch(model);
   }
 
   let patches_patch = join('./patches',file);
   if(existsSync(patches_patch)){
-      model = require(`../${patches_patch}`).logic_patch(model);
+    model = require(`../${patches_patch}`).logic_patch(model);
   }
 
-  if(model.name in models)
-      throw Error(`Duplicated model name ${model.name}`);
+  if(model.name in models) throw Error(`Duplicated model name ${model.name}`);
 
   models[model.name] = model;
 
@@ -114,11 +115,10 @@ getModulesSync(__dirname + "/distributed").forEach(file => {
 
   let validator_patch = join('./validations', file);
   if(existsSync(validator_patch)){
-      model = require(`../${validator_patch}`).validator_patch(model);
+    model = require(`../${validator_patch}`).validator_patch(model);
   }
 
-  if(model.name in models)
-      throw Error(`Duplicated model name ${model.name}`);
+  if(model.name in models) throw Error(`Duplicated model name ${model.name}`);
 
   models[model.name] = model;
 

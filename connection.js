@@ -1,9 +1,9 @@
 const { Sequelize } = require('sequelize');
-const config = require('./config/data_models_storage_config.json');
+const storageConfig = require('./config/data_models_storage_config.json');
 
 
 const Op = Sequelize.Op;
-config.operatorsAliases = {
+storageConfig.operatorsAliases = {
   $eq: Op.eq,
   $and: Op.and,
   $or: Op.or,
@@ -23,36 +23,81 @@ config.operatorsAliases = {
 };
 
 /**
- * Stored sequelize instances.
+ * Stored connection instances. Only sequelize for now.
  */
-const currentInstances = new Map()
+const connectionInstances = Object.keys(storageConfig).reduce(
+
+  // Reducer function to add only "sql"-type of connections
+  (acc, key) => {
+
+    if (
+      storageConfig.hasOwnProperty(key) &&
+      key !== 'operatorsAliases' &&
+      storageConfig[key].storageType === 'sql'
+    ) {
+      acc.set(key, new Sequelize(storageConfig[key]))
+    }
+    return acc;
+  },
+
+  // Object reference
+  new Map()
+
+)
+
+/**
+ * Async verification of all connections imported from
+ * data_models_storage_config.json.
+ */
+exports.checkConnections = async () => {
+
+  const checks = [];
+
+  for (const { 0: key, 1: connection } of connectionInstances.entries()) {
+
+    try {
+      await connection.authenticate();
+      checks.push({ key, valid: true });
+    }
+    catch (exception) {
+      checks.push({ key, valid: false });
+    }
+  }
+
+  return checks;
+
+}
 
 /**
  * Get a new or existing sequelize instance using the specified database.
- * @param {string|undefined} database database config for the sequelize instance
+ * @param {string} key connection key as defined in the model config
  * @returns A configured `new Sequelize` instance
  */
-module.exports.getConnection = (database) => {
-
-  // Verify that database is not "falsy"
-  if (!database) throw Error(
-    'Neither "database" nor "storageType" properties are defined.' +
-    'Verify that "config/data_models_storage_config.json" is correctly set.'
-  )
-
-  // Perform a case-insensitive match
-  const _database = database.toLowerCase();
-  if (!config.hasOwnProperty(_database)) throw Error(
-    `Database config "${_database}" does not exist.` +
-    'Verify that "config/data_models_storage_config.json" is correctly set.'
-  )
+exports.getConnection = (key) => {
 
   // Get and return the connection if it exists
-  if (currentInstances.has(_database)) {
-    return currentInstances.get(_database);
+  if (connectionInstances.has(key)) {
+    return connectionInstances.get(key);
   }
 
   // Or create and return a new connection
-  currentInstances.set(_database, new Sequelize(config[_database]))
-  return currentInstances.get(_database);
+  connectionInstances.set(key, new Sequelize(storageConfig[_database]))
+  return connectionInstances.get(key);
+}
+
+exports.ConnectionError = class ConnectionError extends Error {
+
+  /**
+   * Create a new instance of a data model connection error.
+   * @param {object} modelDefinition model definition as a JSON object
+   */
+  constructor ({ database, model, storageType }) {
+
+    const message = (
+      `Model "${model}" connection to its database failed. Verify that ` +
+      `database "${database}" and storageType "${storageType}" are ` +
+      `correctly set and match the config in "data_models_storage_config.json"`
+    )
+    super(message)
+  }
 }
