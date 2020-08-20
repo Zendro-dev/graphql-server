@@ -1,5 +1,5 @@
 'use strict';
-const dict = require('../utils/graphql-sequelize-types');
+const dict = require('../../utils/graphql-sequelize-types');
 
 /**
  * @module - Migrations to create and to undo a table correpondant to a sequelize model.
@@ -14,7 +14,7 @@ module.exports = {
      * @return {promise}                Resolved if the table was created successfully, rejected otherwise.
      */
     up: function(queryInterface, Sequelize) {
-        return queryInterface.createTable('role_to_users', {
+        return queryInterface.createTable('roles', {
 
             id: {
                 type: Sequelize[dict['Int']],
@@ -30,11 +30,11 @@ module.exports = {
                 type: Sequelize.DATE
             },
 
-            userId: {
-                type: Sequelize[dict['Int']]
+            name: {
+                type: Sequelize[dict['String']]
             },
-            roleId: {
-                type: Sequelize[dict['Int']]
+            description: {
+                type: Sequelize[dict['String']]
             }
 
         });
@@ -48,7 +48,7 @@ module.exports = {
      * @return {promise}                Resolved if the table was deleted successfully, rejected otherwise.
      */
     down: function(queryInterface, Sequelize) {
-        return queryInterface.dropTable('role_to_users');
+        return queryInterface.dropTable('roles');
     }
 
 };
