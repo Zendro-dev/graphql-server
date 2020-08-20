@@ -3,26 +3,7 @@
     "username": "sciencedb",
     "password": "sciencedb",
     "database": "sciencedb_development",
-    "host": "127.0.0.1",
-    "port": "5432",
-    "dialect": "postgres",
-    "operatorsAliases": false
-  },
-  "sql_location": {
-    "username": "sciencedb",
-    "password": "sciencedb",
-    "database": "sciencedb_development",
-    "host": "127.0.0.1",
-    "port": "2345",
-    "dialect": "postgres",
-    "operatorsAliases": false
-  },
-  "sql_people": {
-    "username": "sciencedb",
-    "password": "sciencedb",
-    "database": "sciencedb_development",
-    "host": "127.0.0.1",
-    "port": "2346",
+    "host": "localhost",
     "dialect": "postgres",
     "operatorsAliases": false
   }
