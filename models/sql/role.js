@@ -318,7 +318,7 @@ module.exports = class role extends Sequelize.Model {
         //validate input
         await validatorUtil.validateData('validateForCreate', this, input);
         try {
-            const result = await sequelize.transaction(async (t) => {
+            const result = await this.sequelize.transaction(async (t) => {
                 let item = await super.create(input, {
                     transaction: t
                 });
@@ -350,7 +350,7 @@ module.exports = class role extends Sequelize.Model {
         //validate input
         await validatorUtil.validateData('validateForUpdate', this, input);
         try {
-            let result = await sequelize.transaction(async (t) => {
+            let result = await this.sequelize.transaction(async (t) => {
                 let updated = await super.update(input, {
                     where: {
                         [this.idAttribute()]: input[this.idAttribute()]
@@ -642,13 +642,13 @@ module.exports = class role extends Sequelize.Model {
 
 
     /**
-     * add_userId - field Mutation (model-layer) for to_one associationsArguments to add 
+     * add_userId - field Mutation (model-layer) for to_one associationsArguments to add
      *
      * @param {Id}   id   IdAttribute of the root model to be updated
-     * @param {Id}   userId Foreign Key (stored in "Me") of the Association to be updated. 
+     * @param {Id}   userId Foreign Key (stored in "Me") of the Association to be updated.
      */
     static async add_userId(record, addUsers) {
-        const updated = await sequelize.transaction(async (transaction) => {
+        const updated = await this.sequelize.transaction(async (transaction) => {
             return await record.addUsers(addUsers, {
                 transaction: transaction
             });
@@ -657,13 +657,13 @@ module.exports = class role extends Sequelize.Model {
     }
 
     /**
-     * remove_userId - field Mutation (model-layer) for to_one associationsArguments to remove 
+     * remove_userId - field Mutation (model-layer) for to_one associationsArguments to remove
      *
      * @param {Id}   id   IdAttribute of the root model to be updated
-     * @param {Id}   userId Foreign Key (stored in "Me") of the Association to be updated. 
+     * @param {Id}   userId Foreign Key (stored in "Me") of the Association to be updated.
      */
     static async remove_userId(record, removeUsers) {
-        const updated = await sequelize.transaction(async (transaction) => {
+        const updated = await this.sequelize.transaction(async (transaction) => {
             return await record.removeUsers(removeUsers, {
                 transaction: transaction
             });
