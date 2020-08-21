@@ -4,7 +4,6 @@
     "password": "sciencedb",
     "database": "sciencedb_development",
     "host": "localhost",
-    "dialect": "postgres",
-    "operatorsAliases": false
+    "dialect": "postgres"
   }
 }
