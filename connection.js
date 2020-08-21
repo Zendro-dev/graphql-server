@@ -69,19 +69,12 @@ exports.checkConnections = async () => {
 }
 
 /**
- * Get a new or existing sequelize instance using the specified database.
+ * Get an existing sequelize instance using the specified database.
  * @param {string} key connection key as defined in the model config
- * @returns A configured `new Sequelize` instance
+ * @returns A configured connection instance
  */
 exports.getConnection = (key) => {
 
-  // Get and return the connection if it exists
-  if (connectionInstances.has(key)) {
-    return connectionInstances.get(key);
-  }
-
-  // Or create and return a new connection
-  connectionInstances.set(key, new Sequelize(storageConfig[_database]))
   return connectionInstances.get(key);
 }
 
