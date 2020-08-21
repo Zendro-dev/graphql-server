@@ -21,7 +21,7 @@ getModulesSync(__dirname + "/sql").forEach(file => {
   let modelFile = require(join(__dirname,'sql', file));
 
   const { database } = modelFile.definition;
-  const connection = getConnection(database || 'sql');
+  const connection = getConnection(database || 'default-sql');
   if (!connection) throw new ConnectionError(modelFile.definition);
   let model = modelFile.init(connection, Sequelize);
 
