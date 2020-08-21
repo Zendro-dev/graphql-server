@@ -20,10 +20,14 @@ SEQUELIZE="./node_modules/.bin/sequelize"
 jq -r 'keys[] as $k | "\($k):\(.[$k] | .storageType)"' < $CONFIG |
 while read object; do
 
+  # Split "key:storageType" composite returned by jq
   params=(${object//:/ })
-  key=${params[0]}
-  storageType=${params[1]}
 
+  # Retrieve individual values
+  key="${params[0]}"
+  storageType="${params[1]}"
+
+  # Execute sequelize CLI
   sequelize_params=(
     "--config $CONFIG"
     "--env $key"
