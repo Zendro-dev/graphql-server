@@ -13,7 +13,7 @@ do
 done
 
 
-# Run the migrations
+# Read config and migrate/seed databases
 CONFIG="./config/data_models_storage_config.json"
 SEQUELIZE="./node_modules/.bin/sequelize"
 
@@ -22,27 +22,34 @@ while read object; do
 
   params=(${object//:/ })
   key=${params[0]}
-  store=${params[1]}
+  storageType=${params[1]}
 
-  if [[ "$store" == "sql" ]]; then
+  sequelize_params=(
+    "--config $CONFIG"
+    "--env $key"
+    "--migrations-path ./migrations/$key/"
+    "--seeders-path ./seeders/$key/"
+  )
 
-    if ! $SEQUELIZE db:migrate --config "$CONFIG" --env $key; then
+  if [[ "$storageType" == "sql" ]]; then
+
+    # Run the migrations
+    if ! $SEQUELIZE db:migrate ${sequelize_params[@]}; then
       echo -e '\nERROR: Migrating the relational database(s) caused an error.\n'
       exit 1
+    fi
+
+    # Run seeders if needed
+    if [ -d ./seeders/$key ]; then
+      if ! $SEQUELIZE db:seed:all ${sequelize_params[@]}; then
+        echo -e '\nERROR: Seeding the relational database(s) caused an error.\n'
+        exit 1
+      fi
     fi
 
   fi
 
 done
-
-
-# Run seeders if needed
-if [ -d ./seeders ]; then
-  if ! $SEQUELIZE db:seed:all --config "$CONFIG" --env "sql"; then
-    echo -e '\nERROR: Seeding the relational database(s) caused an error.\n'
-    exit 1
-  fi
-fi
 
 
 # Start GraphQL-server
