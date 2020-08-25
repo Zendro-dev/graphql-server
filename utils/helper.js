@@ -1449,10 +1449,11 @@ module.exports.vueTable = function(req, model, strAttributes) {
     if(typeof pagination === 'object' && (pagination.first < 0 || pagination.last < 0)){
       throw new Error('LIMIT must not be negative')
     }
-
-    let argsValid = (pagination === undefined || pagination === null) 
-    || (typeof pagination === 'object' && pagination.first && !pagination.before && !pagination.last) 
-    || (typeof pagination === 'object' && pagination.last && !pagination.after && !pagination.first);
+    // check if valid paginationArguments. Pagination is required by the schema, however since forward and backward pagination is possible, none of the
+    // arguments are required by the graphQL schema. Valid options are either only "first" or "last". Or "first" and "after" / "last" and "before"
+    let argsValid = typeof pagination === 'object' &&  (
+      (pagination.first && !(pagination.before || pagination.last)) ||
+      (pagination.last && !(pagination.after || pagination.first)));
     if (!argsValid) {
       throw new Error('Illegal cursor based pagination arguments. Use either "first" and optionally "after", or "last" and optionally "before"!');
     } else return;
@@ -1596,20 +1597,28 @@ module.exports.vueTable = function(req, model, strAttributes) {
     return keyMap;
   }
 
+  /**
+   * searchConditionsToSequelize - translates search conditions as given in the graphQl query to sequelize 'where' options
+   * @param {object} search search argument for filtering records
+   * 
+   * @return {object} sequelize 'where' options
+   */
   module.exports.searchConditionsToSequelize = function(search){
-    // check search
-    // module.exports.checkSearchArgument(search);
     let whereOptions = {};
     if(search !== undefined && search !== null){
-      //check
       if(typeof search !== 'object') throw new Error('Illegal "search" argument type, it must be an object.');
       let arg = new searchArg(search);
       whereOptions = arg.toSequelize();
-
     }
     return whereOptions;
   }
-
+  /**
+   * orderConditionsToSequelizeBefore - build the sequelize order object for default (forward) pagination. Default order is by idAttribute ASC
+   * @param {array} order order array given in the graphQl query 
+   * @param {string} idAttribute idAttribute of the model
+   * 
+   * @returns {object} sequelize order options
+   */
   module.exports.orderConditionsToSequelize = function(order, idAttribute){
     let orderOptions = [];
     if (order !== undefined) {
@@ -1627,38 +1636,23 @@ module.exports.vueTable = function(req, model, strAttributes) {
     return orderOptions;
   }
 
-  // module.exports.orderConditionsLimitOffsetToSequelize = function(order, idAttribute){
-  //   let orderOptions = [];
-  //   if (order !== undefined) {
-  //     orderOptions['order'] = order.map((orderItem) => {
-  //       return [orderItem.field, orderItem.order];
-  //     });
-  //   } else if (pagination !== undefined) {
-  //     orderOptions['order'] = [
-  //       [idAttribute, "ASC"]
-  //     ];
-  //   }
-  //   return orderOptions;
-  // }
-
-  // module.exports.limitOffsetPaginationArgumentsToSequelize = function(pagination){
-  //   if (pagination !== undefined) {
-  //     offset = pagination.offset
-  //     options['offset'] = pagination.offset === undefined ? 0 : pagination.offset;
-  //     options['limit'] = pagination.limit === undefined ? (items - options['offset']) : pagination.limit;
-  //   } else {
-  //     options['offset'] = 0;
-  //     options['limit'] = items;
-  //   }
-  // }
-
+  /**
+   * orderConditionsToSequelizeBefore - build the sequelize order object for backward pagination. For backward pagination the ordering
+   * is swapped and the default order is by idAttribute DESC. After fetching the records the order is reserved to get the desired output.
+   * @param {array} order order array given in the graphQl query 
+   * @param {string} idAttribute idAttribute of the model
+   * 
+   * @returns {object} sequelize order options
+   */
   module.exports.orderConditionsToSequelizeBefore = function(order, idAttribute){
     let orderOptions = [];
     if (order !== undefined) {
         orderOptions = order.map((orderItem) => {
+            // swap the ordering
             return orderItem.order === "ASC" ? [orderItem.field, "DESC"] : [orderItem.field, "ASC"] 
         });
     }
+    // add default ordering for idAttribute DESC (will be reserved post fetching)
     if (!orderOptions.map(orderItem => {
             return orderItem[0]
         }).includes(idAttribute)) {
@@ -1668,7 +1662,15 @@ module.exports.vueTable = function(req, model, strAttributes) {
     }
     return orderOptions;
   }
-
+  /**
+   * cursorPaginationArgumentsToSequelize - translate cursor based pagination object to the sequelize options object.
+   * adds the idAttribute of the given cursor to the 'where' argument of the sequelize object
+   * @see parseOrderCursor
+   * 
+   * @param {object} pagination cursor-based pagination object
+   * @param {object} sequelizeOptions sequelize options object to extend
+   * @param {string} idAttribute idAttribute of the model
+   */
   module.exports.cursorPaginationArgumentsToSequelize = function(pagination, sequelizeOptions, idAttribute) {
     if (pagination) {
       if (pagination.after || pagination.before){
@@ -1683,6 +1685,15 @@ module.exports.vueTable = function(req, model, strAttributes) {
     }
   }
 
+  /**
+   * buildLimitOffsetSequelizeOptions - builds the options object used by sequelize for limit-offset based pagination. 
+   * @param {object} search search argument for filtering records
+   * @param {array} order order array given in the graphQl query 
+   * @param {object} pagination cursor-based pagination object
+   * @param {string} idAttribute idAttribute of the model
+   * 
+   * @returns {object} options object consisting of 'where', 'order', 'limit' and 'offset' parameters
+   */
   module.exports.buildLimitOffsetSequelizeOptions = function(search, order, pagination, idAttribute){
     let options =  {};
     options['where'] = module.exports.searchConditionsToSequelize(search);
@@ -1694,12 +1705,21 @@ module.exports.vueTable = function(req, model, strAttributes) {
     return options;
   }
 
+  /**
+   * buildCursorBasedSequelizeOptions - builds the options object used by sequelize for cursor based pagination. 
+   * @param {object} search search argument for filtering records
+   * @param {array} order order array given in the graphQl query 
+   * @param {object} pagination cursor-based pagination object
+   * @param {string} idAttribute idAttribute of the model
+   * 
+   * @returns {object} options object consisting of 'where', 'order' and 'limit' parameters
+   */
   module.exports.buildCursorBasedSequelizeOptions = function(search, order, pagination, idAttribute){
     let options = {};
     let isForwardPagination = module.exports.isForwardPagination(pagination);
     // build the sequelize options object.
     options['where'] = module.exports.searchConditionsToSequelize(search);
-    //options['order'] = module.exports.orderConditionsToSequelize(order, idAttribute);
+    // depending on the direction build the order object
     options['order'] = isForwardPagination ? module.exports.orderConditionsToSequelize(order, idAttribute) : module.exports.orderConditionsToSequelizeBefore(order, idAttribute);
     // extend the where and limit options for the given order and cursor
 
@@ -1707,9 +1727,21 @@ module.exports.vueTable = function(req, model, strAttributes) {
     return options;
   }
 
+  /**
+   * buildOppositeSearch - build the Search in the opposite direction to determine wether a previous page (in forward pagination) or
+   * a next page (in backward pagination) exists.
+   * @param {object} search search argument for filtering records
+   * @param {array} order order array given in the graphQl query 
+   * @param {object} pagination cursor-based pagination object
+   * @param {string} idAttribute idAttribute of the model
+   * 
+   * @returns {object} options object with reversed search options, LIMIT 1 and no ordering, used by sequelize to execute the database query.
+   */
   module.exports.buildOppositeSearch = function(search, order, pagination, idAttribute){
     let isForwardPagination = module.exports.isForwardPagination(pagination);
+    // copy pagination object
     let oppPagination = Object.assign({},pagination)
+    // swap before and after. delete first / last and set the other one to 0.
     if(isForwardPagination){
       oppPagination.before = oppPagination.after
       // 0 because limit will be + 1;
@@ -1722,13 +1754,23 @@ module.exports.vueTable = function(req, model, strAttributes) {
       delete oppPagination.before;
       delete oppPagination.last;
     }
+    // build the sequelize options object to execute the correct query
     let oppOptions = module.exports.buildCursorBasedSequelizeOptions(search, order, oppPagination, idAttribute);
-    
+    // order is not needed since we only need to know if at least 1 record exists.
     oppOptions['order'] = [];
     return oppOptions;
   }
 
-
+  /**
+   * buildPageInfo - build the pageInfo object expected in a GraphQl Connection. Depending on the direction of the search Information about
+   * previous and next page is calculated. Uses the records received from the standard search (with LIMIT + 1) and the search
+   * in the opposite direction (with LIMIT 1).
+   * @param {array} edges Array of GraphQl edges ({node, cursor})
+   * @param {array} oppRecords Array of Records received from the reverse search. 
+   * @param {object} pagination pagination Object. This object will include 'first' or 'last' properties to indicate the number of records to fetch,
+   *  and 'after' or 'before' cursors to indicate from which record to start fetching.
+   * @returns {object} returns the pageInfo object consisting of 'hasPreviousPage', 'hasNextPage', 'startCursor' and 'endCursor'
+   */
   module.exports.buildPageInfo = function(edges, oppRecords, pagination){
     //default
     let pageInfo = {
@@ -1764,6 +1806,13 @@ module.exports.vueTable = function(req, model, strAttributes) {
     return pageInfo;
   }
 
+  
+  /**
+   * buildEdgeObject - builds the edge object expected in a GraphQL Connection from an array of records. The edge object consists
+   * of the record itself and its base64 encoded String as cursor.
+   * @param {array} records array of records to convert
+   * @returns {object} GraphQl Connection object 
+   */
   module.exports.buildEdgeObject = function(records){
     let edges = [];
     if (records.length > 0) {
