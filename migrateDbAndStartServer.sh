@@ -16,11 +16,11 @@ done
 # Read config and migrate/seed databases
 CONFIG="./config/data_models_storage_config.json"
 SEQUELIZE="./node_modules/.bin/sequelize"
+DB_KEYS=( $(node ./scripts/getStorageTypes.js) )
 
-jq -r 'keys[] as $k | "\($k):\(.[$k] | .storageType)"' < $CONFIG |
-while read object; do
+for object in ${DB_KEYS[@]}; do
 
-  # Split "key:storageType" composite returned by jq
+  # Split "key:storageType" in each DB_KEYS element
   params=(${object//:/ })
 
   # Retrieve individual values
