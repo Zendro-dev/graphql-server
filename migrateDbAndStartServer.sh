@@ -2,7 +2,7 @@
 
 # Wait until the relational database-server up and running
 waited=0
-until node ./utils/testDatabaseConnectionsAvailable.js 1>/dev/null
+until node ./scripts/testDatabaseConnectionsAvailable.js 1>/dev/null
 do
   if [ $waited == 240 ]; then
     echo -e '\nERROR: Time out reached while waiting for relational database server to be available.\n'
