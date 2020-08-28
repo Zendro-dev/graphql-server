@@ -1404,7 +1404,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
   }
   
   /** 
-   * checkCountAndReduceRecordLimitHelper - given a count, checks whether it exceeds the
+   * checkCountAndReduceRecordsLimit - given a count, checks whether it exceeds the
    * defined record limit. Throws desriptive error if it exceeds. If not reduces the record Limit
    * in the GraphQL context.
    * 
@@ -1412,7 +1412,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @param {Object} context The GraphQL context passed to the resolver
    * @param {String} resolverName The name of the resolver function
    */
-  module.exports.checkCountAndReduceRecordLimitHelper = function(count, context, resolverName) {
+  module.exports.checkCountAndReduceRecordsLimit = function(count, context, resolverName) {
     if (count > context.recordsLimit) {
       throw new Error(`Max record limit of ${globals.LIMIT_RECORDS} exceeded in ${resolverName}`);
     }
