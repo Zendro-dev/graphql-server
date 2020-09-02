@@ -372,6 +372,8 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @param  {String} idAttribute  idAttribute of the calling model.
    * @param  {Boolean} includeCursor Boolean flag that indicates if a strict or relaxed operator must be used for produce idAttribute conditions.
    * @return {Object}        Where statement to start retrieving records after the given cursor holding the order conditions.
+   * 
+   * @deprecated 
    */
   module.exports.parseOrderCursorBefore = function(order, cursor, idAttribute, includeCursor){
     /**
@@ -500,14 +502,13 @@ module.exports.vueTable = function(req, model, strAttributes) {
    *
    *
    *
-   * @param  {Object} search  Search object whit particular filters.
    * @param  {Array} order  Order entries. Must contains at least the entry for 'idAttribute'.
    * @param  {Object} cursor Cursor record taken as start point(exclusive) to create the where statement.
    * @param  {String} idAttribute  idAttribute of the calling model.
    * @param  {Boolean} includeCursor Boolean flag that indicates if a strict or relaxed operator must be used for produce idAttribute conditions.
    * @return {Object}        Where statement to start retrieving records after the given cursor holding the order conditions.
    */
-  module.exports.parseOrderCursorGeneric = function(search, order, cursor, idAttribute, includeCursor){
+  module.exports.parseOrderCursorGeneric = function(order, cursor, idAttribute, includeCursor){
     /**
      * Checks
      */
@@ -562,19 +563,11 @@ module.exports.vueTable = function(req, model, strAttributes) {
        *      [order[last_index][0]]: { [Op[operator]]: cursor[order[last_index][0]] }
        *    }
        */
-      let search_field = module.exports.addSearchField({
+      let search_field = {
         "field": order[last_index][0],
         "value": {"value": cursor[order[last_index][0]]},
         "operator": operator,
-
-        /**
-         * Add particular search argument provided as input parámeter.
-         * The filters on this serch argument will be the last to apply. 
-         * 
-         * On non-generic version, this step is done outside this function.
-         */
-        "search" : search,
-      }, 'and');
+      };
 
     /*
      * Recursive steps.
@@ -687,7 +680,9 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @param  {Object} cursor Cursor record taken as start point(exclusive) to create the where statement.
    * @param  {String} idAttribute  idAttribute of the calling model.
    * @param  {Boolean} includeCursor Boolean flag that indicates if a strict or relaxed operator must be used for produce idAttribute conditions.
-   * @return {Object}        Where statement to start retrieving records after the given cursor holding the order conditions.
+   * @return {Object}        Where statement to start retrieving records after the given cursor holding the order conditions
+   * 
+   * @deprecated
    */
   module.exports.parseOrderCursorBeforeGeneric = function(search, order, cursor, idAttribute, includeCursor){
     /**
@@ -1204,6 +1199,61 @@ module.exports.vueTable = function(req, model, strAttributes) {
     }  
     return nsearch;
   }
+  /**
+   * mergeSearchArguments - merge two zendro searchArguments into a new searchArgument containing both searches
+   * combined with the given operator.
+   * @param {object} searchA zendro searchArgument of the form: search: {field, operator, value, [search]} In case of DDM excludeAdapterNames can be provided
+   * @param {object} searchB zendro searchArgument of the form: search: {field, operator, value, [search]} In case of DDM excludeAdapterNames can be provided
+   * @param {object} operator zendro searchArguement operator to combine searchA and searchB. default is 'and'
+   */
+  module.exports.mergeSearchArguments = function (searchA, searchB, operator) {
+    let mergeOp = operator ? operator : 'and';
+    /**
+     * Safety checks
+     */
+    //check: no arguments
+    if(!searchA && !searchB) {
+      // throw new Error('No arguments provided to mergeSearch function.');
+      return {};
+    }
+    //check: only searchB
+    if(!searchA && searchB) {
+      return searchB;
+    }
+    //check: only searchA
+    if(searchA && !searchB) {
+      return searchA;
+    }
+    //check: types
+    if(typeof searchA !== 'object' || typeof searchB !== 'object'
+    || (searchA.excludeAdapterNames && !Array.isArray(searchA.excludeAdapterNames))
+    || (searchB.excludeAdapterNames && !Array.isArray(searchB.excludeAdapterNames))) {
+      throw new Error('Illegal arguments provided to mergeSearchArguements function.');
+    }
+    /**
+     * Merge "excludeAdapterNames" arrays
+     */
+    let mergedExcludeAdapterNames = [];
+    if(searchA.excludeAdapterNames) mergedExcludeAdapterNames = [...searchA.excludeAdapterNames];
+    if(searchB.excludeAdapterNames) mergedExcludeAdapterNames = [...mergedExcludeAdapterNames, ...searchB.excludeAdapterNames];
+    //copy
+    let csearchA = {...searchA}; 
+    let csearchB = {...searchB};
+    /**
+     * Strip "excludeAdapterNames" from search object
+     */
+    delete csearchA.excludeAdapterNames;
+    delete csearchB.excludeAdapterNames;
+    /**
+     * Merge search objects
+     */
+    let mergedSearch = {
+      "operator": mergeOp,
+      "search": [csearchA, csearchB],
+      "excludeAdapterNames": (mergedExcludeAdapterNames.length > 0) ? mergedExcludeAdapterNames : undefined
+    };
+    return mergedSearch;
+  }
 
   /**
    * isNonEmtpyArray - Test a value for being a non-empty array
@@ -1500,6 +1550,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @return {limit, offset, search}  A new object with the calculated generic pagination values. 
    * Note: If no pagination is received, the returned object will contain either default values or values
    * copied from the @inputPaginationValues argument, if any.
+   * @deprecated
    */
   module.exports.getGenericPaginationValues = function(pagination, internalIdName, inputPaginationValues) {
     /**
@@ -1613,7 +1664,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
     return whereOptions;
   }
   /**
-   * orderConditionsToSequelizeBefore - build the sequelize order object for default (forward) pagination. Default order is by idAttribute ASC
+   * orderConditionsToSequelize - build the sequelize order object for default (forward) pagination. Default order is by idAttribute ASC
    * @param {array} order order array given in the graphQl query 
    * @param {string} idAttribute idAttribute of the model
    * 
@@ -1635,36 +1686,26 @@ module.exports.vueTable = function(req, model, strAttributes) {
     }
     return orderOptions;
   }
+  /**
+   * reverseOrderConditions - reverse the order from ASC to DESC and the otherway around. Used for backward cursor-based Pagination.
+   * @param {array} order 
+   * 
+   * @returns {array} copy of the input array with reversed order fields.
+   */
+  module.exports.reverseOrderConditions = function(order){
+    if(order === undefined){
+      return;
+    }
+    reverseOrder = [];
+    reverseOrder = order.map(orderItem => {
+      return orderItem.order === "ASC" ? {field: orderItem.field, order: "DESC"} : {field: orderItem.field, order: "ASC"};
+    })
+    return reverseOrder;
+  }
 
   /**
-   * orderConditionsToSequelizeBefore - build the sequelize order object for backward pagination. For backward pagination the ordering
-   * is swapped and the default order is by idAttribute DESC. After fetching the records the order is reserved to get the desired output.
-   * @param {array} order order array given in the graphQl query 
-   * @param {string} idAttribute idAttribute of the model
-   * 
-   * @returns {object} sequelize order options
-   */
-  module.exports.orderConditionsToSequelizeBefore = function(order, idAttribute){
-    let orderOptions = [];
-    if (order !== undefined) {
-        orderOptions = order.map((orderItem) => {
-            // swap the ordering
-            return orderItem.order === "ASC" ? [orderItem.field, "DESC"] : [orderItem.field, "ASC"] 
-        });
-    }
-    // add default ordering for idAttribute DESC (will be reserved post fetching)
-    if (!orderOptions.map(orderItem => {
-            return orderItem[0]
-        }).includes(idAttribute)) {
-        orderOptions = [...orderOptions, ...[
-            [idAttribute, "DESC"]
-        ]];
-    }
-    return orderOptions;
-  }
-  /**
-   * cursorPaginationArgumentsToSequelize - translate cursor based pagination object to the sequelize options object.
-   * adds the idAttribute of the given cursor to the 'where' argument of the sequelize object
+   * cursorPaginationArgumentsToSequelize - translate cursor based pagination object to the sequelize 'where' options.
+   * merge the original searchArguement ('where' options) and those needed for cursor-based pagination 
    * @see parseOrderCursor
    * 
    * @param {object} pagination cursor-based pagination object
@@ -1681,8 +1722,28 @@ module.exports.vueTable = function(req, model, strAttributes) {
           ...module.exports.parseOrderCursor(sequelizeOptions['order'], decoded_cursor, idAttribute, pagination.includeCursor)
         };
       }
-      sequelizeOptions['limit'] = pagination.first !== undefined ? pagination.first + 1 : pagination.last !== undefined ? pagination.last + 1 : undefined;
     }
+  }
+  /**
+   * cursorPaginationArgumentsToSequelize - translate cursor based pagination object to zendro searchArgument.
+   * merge the original searchArguement and those needed for cursor-based pagination 
+   * @see parseOrderCursorGeneric
+   * 
+   * @param {object} search original search argument for filtering
+   * @param {object} pagination cursor-based pagination object
+   * @param {object} orderOptions zendro order 
+   * @param {string} idAttribute idAttribute of the model
+   */
+  module.exports.cursorPaginationArgumentsToGeneric = function(search, pagination, orderOptions, idAttribute) {
+    let paginationSearch = null;
+    if (pagination) {
+      if (pagination.after || pagination.before){
+        let cursor = pagination.after ? pagination.after : pagination.before;
+        let decoded_cursor = JSON.parse(module.exports.base64Decode(cursor));
+        paginationSearch = module.exports.parseOrderCursorGeneric(orderOptions, decoded_cursor, idAttribute, pagination.includeCursor);
+      }
+    }
+    return module.exports.mergeSearchArguments(paginationSearch, search, 'and');
   }
 
   /**
@@ -1720,24 +1781,46 @@ module.exports.vueTable = function(req, model, strAttributes) {
     // build the sequelize options object.
     options['where'] = module.exports.searchConditionsToSequelize(search);
     // depending on the direction build the order object
-    options['order'] = isForwardPagination ? module.exports.orderConditionsToSequelize(order, idAttribute) : module.exports.orderConditionsToSequelizeBefore(order, idAttribute);
-    // extend the where and limit options for the given order and cursor
-
+    options['order'] = isForwardPagination ? module.exports.orderConditionsToSequelize(order, idAttribute) : module.exports.orderConditionsToSequelize(module.exports.reverseOrderConditions(order), idAttribute);
+    // extend the where options for the given order and cursor
     module.exports.cursorPaginationArgumentsToSequelize(pagination, options, idAttribute);
+    // add +1 to the LIMIT to get information about following pages.
+    options['limit'] = pagination.first !== undefined ? pagination.first + 1 : pagination.last !== undefined ? pagination.last + 1 : undefined;
     return options;
   }
 
   /**
-   * buildOppositeSearch - build the Search in the opposite direction to determine wether a previous page (in forward pagination) or
-   * a next page (in backward pagination) exists.
+   * buildCursorBasedGenericOptions - builds a generic options object used by a generic zendro readAll function for cursor based pagination.
    * @param {object} search search argument for filtering records
    * @param {array} order order array given in the graphQl query 
    * @param {object} pagination cursor-based pagination object
    * @param {string} idAttribute idAttribute of the model
    * 
-   * @returns {object} options object with reversed search options, LIMIT 1 and no ordering, used by sequelize to execute the database query.
+   * @returns {object} generic options object with 'search', 'order', and 'pagination' which can be passed to any generic zendro readAll function.
    */
-  module.exports.buildOppositeSearch = function(search, order, pagination, idAttribute){
+  module.exports.buildCursorBasedGenericOptions = function(search, order, pagination, idAttribute){
+    let genericOptions = {};
+    module.exports.checkSearchArgument(search);
+    let isForwardPagination = module.exports.isForwardPagination(pagination);
+    // build order array. For backwards pagination the order is reversed.
+    genericOptions['order'] = isForwardPagination ? order : module.exports.reverseOrderConditions(order);
+    // build order object used by parseOrderCursorGeneric. This function needs the order object to be of the form [["id","ASC"], ["name","DESC"], ...]
+    genericOptions['sequelizeOrder'] = module.exports.orderConditionsToSequelize(genericOptions['order'], idAttribute);
+    // extend the zendro searchArgument to contain the given search Argument and the search needed for cursor-based pagination
+    genericOptions['search'] = module.exports.cursorPaginationArgumentsToGeneric(search, pagination, genericOptions['sequelizeOrder'], idAttribute);
+    // add +1 to the LIMIT to get information about following pages.
+    genericOptions['pagination'] = pagination.first !== undefined ? {limit: pagination.first + 1} : pagination.last !== undefined ? {limit: pagination.last + 1} : undefined;
+    return genericOptions;
+  }
+
+  /**
+   * reversePaginationArgument -  swaps pagination.after and pagination before. Removes the given Limit and sets it to 0 (Limit will be +1 in the query)
+   * This function is used to build the reverse search in the opposite direction to determine wether a next/previous page exists.
+   * @param {object} pagination cursor-based pagination object
+   * 
+   * @returns {object} returns a copy of the original pagination Input with reverse cursors.
+   */
+  module.exports.reversePaginationArgument = function(pagination){
     let isForwardPagination = module.exports.isForwardPagination(pagination);
     // copy pagination object
     let oppPagination = Object.assign({},pagination)
@@ -1754,12 +1837,39 @@ module.exports.vueTable = function(req, model, strAttributes) {
       delete oppPagination.before;
       delete oppPagination.last;
     }
+    return oppPagination;
+  }
+
+  /**
+   * buildOppositeSearch - build the Search in the opposite direction to determine wether a previous page (in forward pagination) or
+   * a next page (in backward pagination) exists.
+   * @param {object} search search argument for filtering records
+   * @param {array} order order array given in the graphQl query 
+   * @param {object} pagination cursor-based pagination object
+   * @param {string} idAttribute idAttribute of the model
+   * 
+   * @returns {object} options object with reversed search options, LIMIT 1 and no ordering, used by sequelize to execute the database query.
+   */
+  module.exports.buildOppositeSearchSequelize = function(search, order, pagination, idAttribute){
+    // reverse the pagination Arguement. after -> before; set first/last to 0, so LIMIT 1 is executed in the reverse Search
+    let oppPagination = module.exports.reversePaginationArgument(pagination);
     // build the sequelize options object to execute the correct query
     let oppOptions = module.exports.buildCursorBasedSequelizeOptions(search, order, oppPagination, idAttribute);
     // order is not needed since we only need to know if at least 1 record exists.
     oppOptions['order'] = [];
     return oppOptions;
   }
+
+  module.exports.buildOppositeSearchGeneric = function(search, order, pagination, idAttribute){
+    // reverse the pagination Arguement. after -> before; set first/last to 0, so LIMIT 1 is executed in the reverse Search
+    let oppPagination = module.exports.reversePaginationArgument(pagination);
+    // build the sequelize options object to execute the correct query
+    let oppOptions = module.exports.buildCursorBasedGenericOptions(search, order, oppPagination, idAttribute);
+    // order is not needed since we only need to know if at least 1 record exists.
+    oppOptions['order'] = [];
+    return oppOptions;
+  }
+
 
   /**
    * buildPageInfo - build the pageInfo object expected in a GraphQl Connection. Depending on the direction of the search Information about
@@ -1783,7 +1893,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
     let isForwardPagination = module.exports.isForwardPagination(pagination);
     if (isForwardPagination) {
       let hasNextPage = (pagination && pagination.first ? (edges.length > pagination.first)  : false);
-      // pop last edge. It is only used to determine if a next page exists.
+      // pop last edge if hasNextPage. It is only used to determine if a next page exists.
       if (hasNextPage){edges.pop()};
       pageInfo = {
         hasPreviousPage: (oppRecords.length > 0) ? true: false,
@@ -1793,6 +1903,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
       }
     } else { //backward
       let hasPreviousPage = (pagination && pagination.last ? (edges.length > pagination.last)  : false);
+      // pop last edge if hasPreviousPage. It is only used to determine if a next page exists.
       if (hasPreviousPage){edges.pop()};
       // reverse edges for correct output order
       edges = edges.reverse();
