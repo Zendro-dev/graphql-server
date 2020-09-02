@@ -6,7 +6,6 @@ const models_index = require('../models/index');
 const { Op } = require("sequelize");
 const globals = require('../config/globals')
 const searchArg = require('./search-argument');
-const { is } = require('sequelize/types/lib/operators');
 
   /**
    * paginate - Creates pagination argument as needed in sequelize cotaining limit and offset accordingly to the current
