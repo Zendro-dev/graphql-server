@@ -1804,8 +1804,8 @@ module.exports.vueTable = function(req, model, strAttributes) {
     module.exports.checkSearchArgument(search);
     let isForwardPagination = module.exports.isForwardPagination(pagination);
     // build order array. For backwards pagination the order is reversed.
-    genericOptions['order'] = [];
     genericOptions['order'] = isForwardPagination ? order : module.exports.reverseOrderConditions(order);
+    genericOptions['order'] === undefined ? genericOptions['order'] = [] : genericOptions['order'];
     // add the default ordering. ASC for forwad DESC for backward.
     isForwardPagination ? genericOptions['order'].push({field: idAttribute, order: "ASC"}) : genericOptions['order'].push({field: idAttribute, order: "DESC"});
     // build order object used by parseOrderCursorGeneric. This function needs the order object to be of the form [["id","ASC"], ["name","DESC"], ...]
