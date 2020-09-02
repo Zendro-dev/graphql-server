@@ -1805,6 +1805,8 @@ module.exports.vueTable = function(req, model, strAttributes) {
     let isForwardPagination = module.exports.isForwardPagination(pagination);
     // build order array. For backwards pagination the order is reversed.
     genericOptions['order'] = isForwardPagination ? order : module.exports.reverseOrderConditions(order);
+    // add the default ordering. ASC for forwad DESC for backward.
+    isForwardPagination ? genericOptions['order'].push({field: idAttribute, order: "ASC"}) : genericOptions['order'].push({field: idAttribute, order: "DESC"});
     // build order object used by parseOrderCursorGeneric. This function needs the order object to be of the form [["id","ASC"], ["name","DESC"], ...]
     genericOptions['sequelizeOrder'] = module.exports.orderConditionsToSequelize(genericOptions['order'], idAttribute, isForwardPagination);
     // extend the zendro searchArgument to contain the given search Argument and the search needed for cursor-based pagination
