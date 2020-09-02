@@ -6,6 +6,7 @@ const models_index = require('../models/index');
 const { Op } = require("sequelize");
 const globals = require('../config/globals')
 const searchArg = require('./search-argument');
+const { is } = require('sequelize/types/lib/operators');
 
   /**
    * paginate - Creates pagination argument as needed in sequelize cotaining limit and offset accordingly to the current
@@ -1670,7 +1671,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * 
    * @returns {object} sequelize order options
    */
-  module.exports.orderConditionsToSequelize = function(order, idAttribute){
+  module.exports.orderConditionsToSequelize = function(order, idAttribute, isForwardPagination){
     let orderOptions = [];
     if (order !== undefined) {
         orderOptions = order.map((orderItem) => {
@@ -1680,9 +1681,9 @@ module.exports.vueTable = function(req, model, strAttributes) {
     if (!orderOptions.map(orderItem => {
             return orderItem[0]
         }).includes(idAttribute)) {
-        orderOptions = [...orderOptions, ...[
-            [idAttribute, "ASC"]
-        ]];
+        orderOptions = isForwardPagination ?
+        [...orderOptions, ...[[idAttribute, "ASC"]]] :
+        [...orderOptions, ...[[idAttribute, "DESC"]]];
     }
     return orderOptions;
   }
@@ -1758,7 +1759,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
   module.exports.buildLimitOffsetSequelizeOptions = function(search, order, pagination, idAttribute){
     let options =  {};
     options['where'] = module.exports.searchConditionsToSequelize(search);
-    options['order'] = module.exports.orderConditionsToSequelize(order, idAttribute);
+    options['order'] = module.exports.orderConditionsToSequelize(order, idAttribute, true);
     if (pagination !== undefined){
       options['limit'] = pagination.limit !== undefined ? pagination.limit : undefined;
       options['offset'] = pagination.offset !== undefined ? pagination.offset : undefined;
@@ -1781,7 +1782,8 @@ module.exports.vueTable = function(req, model, strAttributes) {
     // build the sequelize options object.
     options['where'] = module.exports.searchConditionsToSequelize(search);
     // depending on the direction build the order object
-    options['order'] = isForwardPagination ? module.exports.orderConditionsToSequelize(order, idAttribute) : module.exports.orderConditionsToSequelize(module.exports.reverseOrderConditions(order), idAttribute);
+    options['order'] = isForwardPagination ? module.exports.orderConditionsToSequelize(order, idAttribute, isForwardPagination) :
+      module.exports.orderConditionsToSequelize(module.exports.reverseOrderConditions(order), idAttribute, isForwardPagination);
     // extend the where options for the given order and cursor
     module.exports.cursorPaginationArgumentsToSequelize(pagination, options, idAttribute);
     // add +1 to the LIMIT to get information about following pages.
@@ -1805,7 +1807,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
     // build order array. For backwards pagination the order is reversed.
     genericOptions['order'] = isForwardPagination ? order : module.exports.reverseOrderConditions(order);
     // build order object used by parseOrderCursorGeneric. This function needs the order object to be of the form [["id","ASC"], ["name","DESC"], ...]
-    genericOptions['sequelizeOrder'] = module.exports.orderConditionsToSequelize(genericOptions['order'], idAttribute);
+    genericOptions['sequelizeOrder'] = module.exports.orderConditionsToSequelize(genericOptions['order'], idAttribute, isForwardPagination);
     // extend the zendro searchArgument to contain the given search Argument and the search needed for cursor-based pagination
     genericOptions['search'] = module.exports.cursorPaginationArgumentsToGeneric(search, pagination, genericOptions['sequelizeOrder'], idAttribute);
     // add +1 to the LIMIT to get information about following pages.
