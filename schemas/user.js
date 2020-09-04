@@ -20,13 +20,13 @@ module.exports = `
     """
     @search-request
     """
-    rolesFilter(search: searchRoleInput, order: [ orderRoleInput ], pagination: paginationInput): [role]
+    rolesFilter(search: searchRoleInput, order: [ orderRoleInput ], pagination: paginationInput!): [role]
 
 
     """
     @search-request
     """
-    rolesConnection(search: searchRoleInput, order: [ orderRoleInput ], pagination: paginationCursorInput): RoleConnection
+    rolesConnection(search: searchRoleInput, order: [ orderRoleInput ], pagination: paginationCursorInput!): RoleConnection
 
     """
     @count-request
@@ -71,18 +71,21 @@ type UserEdge{
     field: userField
     order: Order
   }
+
+
+
   type Query {
-    users(search: searchUserInput, order: [ orderUserInput ], pagination: paginationInput ): [user]
+    users(search: searchUserInput, order: [ orderUserInput ], pagination: paginationInput! ): [user]
     readOneUser(id: ID!): user
     countUsers(search: searchUserInput ): Int
     vueTableUser : VueTableUser    csvTableTemplateUser: [String]
-
-    usersConnection(search:searchUserInput, order: [ orderUserInput ], pagination: paginationCursorInput ): UserConnection
+    usersConnection(search:searchUserInput, order: [ orderUserInput ], pagination: paginationCursorInput! ): UserConnection
   }
-    type Mutation {
+
+  type Mutation {
     addUser( email: String, password: String   , addRoles:[ID] , skipAssociationsExistenceChecks:Boolean = false): user!
     updateUser(id: ID!, email: String, password: String   , addRoles:[ID], removeRoles:[ID]  , skipAssociationsExistenceChecks:Boolean = false): user!
-  deleteUser(id: ID!): String!
-  bulkAddUserCsv: String! }
-
+    deleteUser(id: ID!): String!
+    bulkAddUserCsv: String!
+      }
 `;
