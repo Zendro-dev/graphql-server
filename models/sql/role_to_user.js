@@ -299,7 +299,7 @@ module.exports = class role_to_user extends Sequelize.Model {
         //validate input
         await validatorUtil.validateData('validateForCreate', this, input);
         try {
-            const result = await sequelize.transaction(async (t) => {
+            const result = await this.sequelize.transaction(async (t) => {
                 let item = await super.create(input, {
                     transaction: t
                 });
@@ -331,7 +331,7 @@ module.exports = class role_to_user extends Sequelize.Model {
         //validate input
         await validatorUtil.validateData('validateForUpdate', this, input);
         try {
-            let result = await sequelize.transaction(async (t) => {
+            let result = await this.sequelize.transaction(async (t) => {
                 let updated = await super.update(input, {
                     where: {
                         [this.idAttribute()]: input[this.idAttribute()]

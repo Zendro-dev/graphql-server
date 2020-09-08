@@ -322,7 +322,7 @@ module.exports = class user extends Sequelize.Model {
         try {
             let hash = await bcrypt.hash(input.password, globals.SALT_ROUNDS);
             input.password = hash;
-            const result = await sequelize.transaction(async (t) => {
+            const result = await this.sequelize.transaction(async (t) => {
                 let item = await super.create(input, {
                     transaction: t
                 });
@@ -359,7 +359,7 @@ module.exports = class user extends Sequelize.Model {
               let hash = await bcrypt.hash(input.password, globals.SALT_ROUNDS);
               input.password = hash;
             }
-            let result = await sequelize.transaction(async (t) => {
+            let result = await this.sequelize.transaction(async (t) => {
                 let updated = await super.update(input, {
                     where: {
                         [this.idAttribute()]: input[this.idAttribute()]
@@ -657,7 +657,7 @@ module.exports = class user extends Sequelize.Model {
      * @param {Id}   roleId Foreign Key (stored in "Me") of the Association to be updated.
      */
     static async add_roleId(record, addRoles) {
-        const updated = await sequelize.transaction(async (transaction) => {
+        const updated = await this.sequelize.transaction(async (transaction) => {
             return await record.addRoles(addRoles, {
                 transaction: transaction
             });
@@ -672,7 +672,7 @@ module.exports = class user extends Sequelize.Model {
      * @param {Id}   roleId Foreign Key (stored in "Me") of the Association to be updated.
      */
     static async remove_roleId(record, removeRoles) {
-        const updated = await sequelize.transaction(async (transaction) => {
+        const updated = await this.sequelize.transaction(async (transaction) => {
             return await record.removeRoles(removeRoles, {
                 transaction: transaction
             });

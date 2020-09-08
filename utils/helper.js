@@ -1565,3 +1565,28 @@ module.exports.vueTable = function(req, model, strAttributes) {
   module.exports.getEffectiveRecordsCount = function(count, limit, offset) {
     return (limit !== undefined) ? Math.min( count-offset, limit ) : count-offset;
   }
+
+  /**
+   * mapForeignKeysToPrimaryKeyArray - Maps the given bulkAssociationInput foreignKeys to Arrays of primaryKeys. used for bulkAssociation
+   * example: mapForeignKeystoPrimaryKeyArray([{personId: 1, dogId:2},{personId:1, dogId:3}, {personId:2, dogId:4}], 'dogId','personId')
+   *          => [ { personId: 1, dogId: [ 2, 3 ] }, { personId: 2, dogId: [ 4 ] } ]
+   *
+   * @param {Array} bulkAssociationInput bulkAssociationInput as described in schema (see example)
+   * @param {ID} primaryKey The primaryKey of the input
+   * @param {ID} foreignKey The foreignKey of the input
+   *
+   * @returns {Array} Array of foreignKeys to Arrays of primaryKeys (see above example)
+   */
+  module.exports.mapForeignKeysToPrimaryKeyArray = function(bulkAssociationInput, primaryKey, foreignKey){
+    // filter unique foreignKeys
+    let uniqueForeignyKeys = [...new Set(bulkAssociationInput.map(item => item[foreignKey]))];
+    let keyMap = [];
+    uniqueForeignyKeys.forEach(pK => {
+      let filteredForeignKeys = [...new Set(bulkAssociationInput.filter(item => item[foreignKey] === pK).map(item => item[primaryKey]))];
+      let primaryKeytofilteredForeignKeys = {}
+      primaryKeytofilteredForeignKeys[foreignKey] = pK;
+      primaryKeytofilteredForeignKeys[primaryKey] = filteredForeignKeys;
+      keyMap.push(primaryKeytofilteredForeignKeys);
+    });
+    return keyMap;
+  }
