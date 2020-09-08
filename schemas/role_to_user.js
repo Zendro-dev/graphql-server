@@ -46,7 +46,7 @@ type Role_to_userEdge{
   }
   input searchRole_to_userInput {
     field: role_to_userField
-    value: String!
+    value: String
     valueType: InputType
     operator: Operator
     search: [searchRole_to_userInput]

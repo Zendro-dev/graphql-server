@@ -62,7 +62,7 @@ type UserEdge{
   }
   input searchUserInput {
     field: userField
-    value: String!
+    value: String
     valueType: InputType
     operator: Operator
     search: [searchUserInput]

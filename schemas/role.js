@@ -62,7 +62,7 @@ type RoleEdge{
   }
   input searchRoleInput {
     field: roleField
-    value: String!
+    value: String
     valueType: InputType
     operator: Operator
     search: [searchRoleInput]
