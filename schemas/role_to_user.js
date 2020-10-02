@@ -56,18 +56,21 @@ type Role_to_userEdge{
     field: role_to_userField
     order: Order
   }
+
+
+
   type Query {
-    role_to_users(search: searchRole_to_userInput, order: [ orderRole_to_userInput ], pagination: paginationInput ): [role_to_user]
+    role_to_users(search: searchRole_to_userInput, order: [ orderRole_to_userInput ], pagination: paginationInput! ): [role_to_user]
     readOneRole_to_user(id: ID!): role_to_user
     countRole_to_users(search: searchRole_to_userInput ): Int
     vueTableRole_to_user : VueTableRole_to_user    csvTableTemplateRole_to_user: [String]
-
-    role_to_usersConnection(search:searchRole_to_userInput, order: [ orderRole_to_userInput ], pagination: paginationCursorInput ): Role_to_userConnection
+    role_to_usersConnection(search:searchRole_to_userInput, order: [ orderRole_to_userInput ], pagination: paginationCursorInput! ): Role_to_userConnection
   }
-    type Mutation {
+
+  type Mutation {
     addRole_to_user( userId: Int, roleId: Int    , skipAssociationsExistenceChecks:Boolean = false): role_to_user!
     updateRole_to_user(id: ID!, userId: Int, roleId: Int    , skipAssociationsExistenceChecks:Boolean = false): role_to_user!
-  deleteRole_to_user(id: ID!): String!
-  bulkAddRole_to_userCsv: String! }
-
+    deleteRole_to_user(id: ID!): String!
+    bulkAddRole_to_userCsv: String!
+      }
 `;
