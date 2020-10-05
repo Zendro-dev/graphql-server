@@ -1256,6 +1256,44 @@ module.exports.vueTable = function(req, model, strAttributes) {
   }
 
   /**
+   * mergeSequelizeWhereArguments - merge two sequelize where objects into a new sequelize where object containing both
+   * arguments combined with the given operator (and by default).
+   * @param {object} whereA first sequelize where-object of the form: {field: {[OP]: "value"}}
+   * @param {object} whereB second sequelize where-object of the form: {field: {[OP]: "value"}}
+   * @param {object} operator operator to combine whereA and whereB. Valid operators are 'and' or 'or'. default is 'and'.
+   */
+  module.exports.mergeSequelizeWhereArguments = function (whereA, whereB, operator) {
+    if(operator && (operator !=='and' || operator !=='or')) throw new Error('Only "and" or "or" operators are valid.');
+    let mergeOp = operator ? operator : 'and';
+
+    /**
+     * Safety checks
+     */
+    //check: no arguments
+    if(!whereA && !whereB) {
+      // throw new Error('No arguments provided to merge function.');
+      return {};
+    }
+    //check: only whereB
+    if(!whereA && whereB) {
+      return whereB;
+    }
+    //check: only whereA
+    if(whereA && !whereB) {
+      return whereA;
+    }
+    //check: types
+    if(typeof whereA !== 'object' || typeof whereB !== 'object') {
+      throw new Error('Illegal arguments provided to mergeSequelizeWhereArguments function.');
+    }
+    /**
+     * Merge where-objects
+     */
+    let mergedWhere = { [Op[mergeOp]]: [whereA, whereB] }
+    return mergedWhere;
+  }
+
+  /**
    * isNonEmtpyArray - Test a value for being a non-empty array
    *
    * @param {any} a value to be tested for being a non-empty array
@@ -1703,6 +1741,8 @@ module.exports.vueTable = function(req, model, strAttributes) {
     return reverseOrder;
   }
 
+  
+
   /**
    * cursorPaginationArgumentsToSequelize - translate cursor based pagination object to the sequelize 'where' options.
    * merge the original searchArguement ('where' options) and those needed for cursor-based pagination 
@@ -1717,10 +1757,8 @@ module.exports.vueTable = function(req, model, strAttributes) {
       if (pagination.after || pagination.before){
         let cursor = pagination.after ? pagination.after : pagination.before;
         let decoded_cursor = JSON.parse(module.exports.base64Decode(cursor));
-        sequelizeOptions['where'] = {
-          ...sequelizeOptions['where'],
-          ...module.exports.parseOrderCursor(sequelizeOptions['order'], decoded_cursor, idAttribute, pagination.includeCursor)
-        };
+        let sequelizePaginationWhereOptions = module.exports.parseOrderCursor(sequelizeOptions['order'], decoded_cursor, idAttribute, pagination.includeCursor); 
+        sequelizeOptions['where'] = this.mergeSequelizeWhereArguments(sequelizeOptions['where'], sequelizePaginationWhereOptions);
       }
     }
   }
