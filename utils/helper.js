@@ -1555,7 +1555,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @param {object}  pagination  Cursor-based pagination object.
    */
   module.exports.isForwardPagination = function(pagination) {
-    return (!pagination || pagination.first !== undefined);
+    return (!pagination || this.isNotUndefinedAndNotNull(pagination.first));
   }
 
   /**
@@ -1797,9 +1797,9 @@ module.exports.vueTable = function(req, model, strAttributes) {
     let options =  {};
     options['where'] = module.exports.searchConditionsToSequelize(search);
     options['order'] = module.exports.orderConditionsToSequelize(order, idAttribute, true);
-    if (pagination !== undefined){
-      options['limit'] = pagination.limit !== undefined ? pagination.limit : undefined;
-      options['offset'] = pagination.offset !== undefined ? pagination.offset : undefined;
+    if (pagination){
+      options['limit'] = pagination.limit ? pagination.limit : undefined;
+      options['offset'] = pagination.offset ? pagination.offset : undefined;
     }
     return options;
   }
@@ -1824,7 +1824,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
     // extend the where options for the given order and cursor
     module.exports.cursorPaginationArgumentsToSequelize(pagination, options, idAttribute);
     // add +1 to the LIMIT to get information about following pages.
-    options['limit'] = pagination.first !== undefined ? pagination.first + 1 : pagination.last !== undefined ? pagination.last + 1 : undefined;
+    options['limit'] = this.isNotUndefinedAndNotNull(pagination.first) ? pagination.first + 1 : this.isNotUndefinedAndNotNull(pagination.last) ? pagination.last + 1 : undefined;
     return options;
   }
 
@@ -1851,7 +1851,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
     // extend the zendro searchArgument to contain the given search Argument and the search needed for cursor-based pagination
     genericOptions['search'] = module.exports.cursorPaginationArgumentsToGeneric(search, pagination, genericOptions['sequelizeOrder'], idAttribute);
     // add +1 to the LIMIT to get information about following pages.
-    genericOptions['pagination'] = pagination.first !== undefined ? {limit: pagination.first + 1} : pagination.last !== undefined ? {limit: pagination.last + 1} : undefined;
+    genericOptions['pagination'] = this.isNotUndefinedAndNotNull(pagination.first) ? {limit: pagination.first + 1} : this.isNotUndefinedAndNotNull(pagination.last) ? {limit: pagination.last + 1} : undefined;
     return genericOptions;
   }
 
