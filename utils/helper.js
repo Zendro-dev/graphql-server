@@ -1599,7 +1599,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
     }
 
     //defaults
-    let limit = undefined;
+    let limit = 0;
     let offset = 0;
     let search = undefined;
     let order = [ [internalIdName, "ASC"] ];
@@ -1619,8 +1619,8 @@ module.exports.vueTable = function(req, model, strAttributes) {
       /**
        * Case: limit-offset pagination
        */
-      if(pagination.limit !== undefined || pagination.offset !== undefined) {
-        limit = pagination.limit ? pagination.limit : undefined;
+      if(this.isNotUndefinedAndNotNull(pagination.limit) || this.isNotUndefinedAndNotNull(pagination.offset)) {
+        limit = pagination.limit ? pagination.limit : 0;
         offset = pagination.offset ? pagination.offset : 0;
       } else {
         /**
@@ -1634,14 +1634,14 @@ module.exports.vueTable = function(req, model, strAttributes) {
             let decoded_cursor = JSON.parse(module.exports.base64Decode(pagination.after));
             search = module.exports.parseOrderCursorGeneric(inputPaginationValues.search, order, decoded_cursor, internalIdName, pagination.includeCursor);
           }
-          limit = pagination.first ? pagination.first : undefined;
+          limit = pagination.first ? pagination.first : 0;
           offset = 0;
         }else {//backward
           if(pagination.before) {
             let decoded_cursor = JSON.parse(module.exports.base64Decode(pagination.before));
             search = module.exports.parseOrderCursorBeforeGeneric(inputPaginationValues.search, order, decoded_cursor, internalIdName, pagination.includeCursor);
           }
-          limit = pagination.last ? pagination.last : undefined;
+          limit = pagination.last ? pagination.last : 0;
           offset = 0;
         }
       }
@@ -1658,7 +1658,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
    * @param {int} offset  A generic pagination offset argument.
    */
   module.exports.getEffectiveRecordsCount = function(count, limit, offset) {
-    return (limit !== undefined) ? Math.min( count-offset, limit ) : count-offset;
+    return this.isNotUndefinedAndNotNull(limit) ? Math.min( count-offset, limit ) : count-offset;
   }
 
   /**

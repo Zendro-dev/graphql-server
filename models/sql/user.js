@@ -123,8 +123,8 @@ module.exports = class user extends Sequelize.Model {
         // get the first record (if exists) in the opposite direction to determine pageInfo.
         // if no cursor was given there is no need for an extra query as the results will start at the first (or last) page.
         let oppRecords = [];
-        if (pagination && (pagination.after !== undefined || pagination.before !== undefined)) {
-            let oppOptions = helper.buildOppositeSearchSequelize(search, order, pagination, this.idAttribute());
+        if (pagination && (pagination.after || pagination.before)) {
+            let oppOptions = helper.buildOppositeSearchSequelize(search, order, {...pagination, includeCursor: false}, this.idAttribute());
             oppRecords = await super.findAll(oppOptions);
         }
         // build the graphql Connection Object
@@ -289,8 +289,8 @@ module.exports = class user extends Sequelize.Model {
         // get the first record (if exists) in the opposite direction to determine pageInfo.
         // if no cursor was given there is no need for an extra query as the results will start at the first (or last) page.
         let oppRecords = [];
-        if (pagination && (pagination.after !== undefined || pagination.before !== undefined)) {
-            let oppOptions = helper.buildOppositeSearchSequelize(search, order, pagination, models.role.idAttribute());
+        if (pagination && (pagination.after || pagination.before)) {
+            let oppOptions = helper.buildOppositeSearchSequelize(search, order, {...pagination, includeCursor: false}, models.role.idAttribute());
             oppRecords = await this.getRoles(oppOptions);
         }
         // build the graphql Connection Object
