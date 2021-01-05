@@ -1784,7 +1784,7 @@ module.exports.vueTable = function(req, model, strAttributes) {
     //prepare:
     compositeResponses = {
       data:   data.length === 1 ? data[0] : data,
-      errors: errors.length > 0 ? errors : undefined,
+      errors: errors
     }
     return compositeResponses;
   }
