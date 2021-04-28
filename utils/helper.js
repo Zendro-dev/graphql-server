@@ -2567,7 +2567,7 @@ module.exports.initializeStorageHandlersForModels = async (models) => {
     }
   });
 
-  const storageTypes = ["mongodb", "cassandra", "amazonS3"];
+  const storageTypes = ["mongodb", "cassandra", "amazonS3", "trino", "presto"];
   for (let storage of storageTypes) {
     console.log(`assign storage handler to ${storage} models`);
 
@@ -2606,9 +2606,9 @@ module.exports.initializeStorageHandlersForAdapters = async (adapters) => {
     console.log("assign storage handler to adapter: " + name);
   }
 
-  const storageTypes = ["mongodb", "cassandra", "amazonS3"];
+  const storageTypes = ["mongodb", "cassandra", "amazonS3", "trino", "presto"];
   for (let storage of storageTypes) {
-    console.log(`assign storage handler to ${storage} models`);
+    console.log(`assign storage handler to ${storage} adapters`);
 
     for (let name of Object.keys(adapters[storage])) {
       const database = adapters[storage][name].database;

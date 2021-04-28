@@ -7,6 +7,8 @@ let models = {
   mongodb: {},
   cassandra: {},
   amazonS3: {},
+  trino: {},
+  presto: {},
 };
 const storageTypes = Object.keys(models);
 module.exports = models;

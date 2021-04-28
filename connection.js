@@ -2,9 +2,9 @@ const { Sequelize } = require("sequelize");
 const storageConfig = require("./config/data_models_storage_config.json");
 const { MongoClient } = require("mongodb");
 const AWS = require("aws-sdk");
-
+const presto = require("presto-client");
 const cassandraDriver = require("cassandra-driver");
-
+const { queryData } = require("./utils/presto_helper");
 const Op = Sequelize.Op;
 storageConfig.operatorsAliases = {
   $eq: Op.eq,
@@ -144,6 +144,36 @@ const addConnectionInstances = async () => {
         storageType,
         connection: await setupAmazonS3(),
       });
+    } else if (
+      storageConfig.hasOwnProperty(key) &&
+      key !== "operatorsAliases" &&
+      storageType === "trino"
+    ) {
+      connectionInstances.set(key, {
+        storageType,
+        connection: new presto.Client({
+          host: storageConfig[key].trino_host,
+          port: storageConfig[key].trino_port,
+          catalog: storageConfig[key].catalog,
+          schema: storageConfig[key].schema,
+          source: "nodejs-client",
+        }),
+      });
+    } else if (
+      storageConfig.hasOwnProperty(key) &&
+      key !== "operatorsAliases" &&
+      storageType === "presto"
+    ) {
+      connectionInstances.set(key, {
+        storageType,
+        connection: new presto.Client({
+          host: storageConfig[key].presto_host,
+          port: storageConfig[key].presto_port,
+          catalog: storageConfig[key].catalog,
+          schema: storageConfig[key].schema,
+          source: "nodejs-client",
+        }),
+      });
     }
   }
   return connectionInstances;
@@ -172,6 +202,28 @@ exports.checkConnections = async () => {
             Bucket: storageConfig["default-amazonS3"].bucket,
           })
           .promise();
+      } else if (instance.storageType === "trino") {
+        try {
+          const trino_conf = storageConfig["default-trino"];
+          await queryData(
+            `SHOW TABLES FROM ${trino_conf.catalog}.${trino_conf.schema}`,
+            instance.connection,
+            trino_conf.storageType
+          );
+        } catch (error) {
+          throw error;
+        }
+      } else if (instance.storageType === "presto") {
+        try {
+          const presto_conf = storageConfig["default-presto"];
+          await queryData(
+            `SHOW TABLES FROM ${presto_conf.catalog}.${presto_conf.schema}`,
+            instance.connection,
+            presto_conf.storageType
+          );
+        } catch (error) {
+          throw error;
+        }
       }
       checks.push({ key, valid: true });
     } catch (exception) {

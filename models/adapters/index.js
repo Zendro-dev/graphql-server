@@ -7,6 +7,8 @@ let adapters = {
   mongodb: {},
   cassandra: {},
   amazonS3: {},
+  trino: {},
+  presto: {},
 };
 module.exports = adapters;
 getModulesSync(__dirname).forEach((file) => {
@@ -26,6 +28,8 @@ getModulesSync(__dirname).forEach((file) => {
     case "sql-adapter":
     case "mongodb-adapter":
     case "cassandra-adapter":
+    case "trino-adapter":
+    case "presto-adapter":
       adapters[adapter.adapterType.split("-")[0]][adapter.adapterName] =
         adapter.definition;
       adapters[adapter.adapterName] = adapter;

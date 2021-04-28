@@ -195,7 +195,6 @@ module.exports = class search {
    *
    * @param {*} operator
    */
-  // didn't support notLike notBetween notIn all contains contained regexp notRegexp
   transformAmazonS3Operator(operator) {
     if (operator === undefined) {
       return;
@@ -327,7 +326,7 @@ module.exports = class search {
    *
    * @returns{string} Translated search instance
    */
-  toAmazonS3(dataModelDefinition, arrayDelimiter) {
+  toAmazonS3(dataModelDefinition, arrayDelimiter, storageType = "AmazonS3") {
     let searchsInAmazonS3 = "";
     let type = dataModelDefinition[this.field];
     const transformedOperator = this.transformAmazonS3Operator(this.operator);
@@ -342,16 +341,21 @@ module.exports = class search {
       searchsInAmazonS3 = transformedOperator + this.value;
     } else if (this.search === undefined) {
       let arrayType = type != undefined && type.replace(/\s+/g, "")[0] === "[";
-      const pattern = [
-        `'${this.value}${arrayDelimiter}%'`,
-        `'%${arrayDelimiter}${this.value}${arrayDelimiter}%'`,
-        `'%${arrayDelimiter}${this.value}'`,
-      ];
+      const pattern =
+        storageType === "AmazonS3"
+          ? [
+              `'${this.value}${arrayDelimiter}%'`,
+              `'%${arrayDelimiter}${this.value}${arrayDelimiter}%'`,
+              `'%${arrayDelimiter}${this.value}'`,
+            ]
+          : [
+              `'["${this.value}",%'`,
+              `'%,"${this.value}",%'`,
+              `'%,"${this.value}"]'`,
+            ];
       let value = this.value;
       if (arrayType && this.operator === "in") {
-        if (stringType.includes(type.replace(/\s+/g, "").slice(1, -1))) {
-          value = `'${this.value}'`;
-        }
+        value = `'${this.value}'`;
         searchsInAmazonS3 += pattern
           .map((item) => {
             return ` ${this.field} LIKE ${item} `;
@@ -360,16 +364,26 @@ module.exports = class search {
         searchsInAmazonS3 += ` OR ${this.field} = ${value} `;
       } else {
         if (Array.isArray(value)) {
-          if (stringType.includes(type)) {
-            value = `(${value.map((e) => `'${e}'`)})`;
-          } else {
-            value = `(${value.map((e) => `${e}`)})`;
-          }
-        } else {
           if (
             stringType.includes(type) ||
             stringType.includes(type.replace(/\s+/g, "").slice(1, -1))
           ) {
+            value =
+              this.operator === "in"
+                ? `(${value.map((e) => `'${e}'`)})`
+                : storageType === "AmazonS3"
+                ? `'${value.join(arrayDelimiter)}'`
+                : `'[${value.map((e) => `"${e}"`)}]'`;
+          } else {
+            value =
+              this.operator === "in"
+                ? `(${value.map((e) => `${e}`)})`
+                : storageType === "AmazonS3"
+                ? `'${value.join(arrayDelimiter)}'`
+                : `'[${value.map((e) => `${e}`)}]'`;
+          }
+        } else {
+          if (stringType.includes(type) || arrayType) {
             value = `'${value}'`;
           }
         }
@@ -382,14 +396,19 @@ module.exports = class search {
         searchsInAmazonS3 =
           transformedOperator +
           "(" +
-          new_search.toAmazonS3(dataModelDefinition, arrayDelimiter) +
+          new_search.toAmazonS3(
+            dataModelDefinition,
+            arrayDelimiter,
+            storageType
+          ) +
           ")";
       } else {
         searchsInAmazonS3 = this.search
           .map((singleSearch) =>
             new search(singleSearch).toAmazonS3(
               dataModelDefinition,
-              arrayDelimiter
+              arrayDelimiter,
+              storageType
             )
           )
           .join(transformedOperator);

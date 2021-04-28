@@ -5,7 +5,8 @@
     "password": "sciencedb",
     "database": "sciencedb_development",
     "host": "127.0.0.1",
-    "dialect": "postgres"
+    "dialect": "postgres",
+    "port": "1234"
   },
   "default-mongodb": {
     "storageType": "mongodb",
@@ -34,5 +35,29 @@
     "recordDelimiter": "\n",
     "fieldDelimiter": ",",
     "arrayDelimiter": ";"
+  },
+  "default-trino": {
+    "storageType": "trino",
+    "username": "sciencedb",
+    "password": "sciencedb",
+    "database": "sciencedb_development",
+    "db_host": "gql_postgres1",
+    "db_port": "5432",
+    "catalog":"postgresql",
+    "schema":"public",
+    "trino_host": "127.0.0.1",
+    "trino_port": "8080"
+  },
+  "default-presto": {
+    "storageType": "presto",
+    "username": "sciencedb",
+    "password": "sciencedb",
+    "database": "sciencedb_development",
+    "db_host": "gql_postgres1",
+    "db_port": "5432",
+    "catalog":"postgresql",
+    "schema":"public",
+    "presto_host": "127.0.0.1",
+    "presto_port": "8081"
   }
 }
