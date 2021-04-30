@@ -2508,9 +2508,18 @@ module.exports.buildPageInfo = function (edges, oppRecords, pagination) {
     }
     // reverse edges for correct output order
     edges = edges.reverse();
+    
+    let cursor = pagination.before ? pagination.before : null;
+    let hasNextPage = false;
+    if (cursor && oppRecords.length === 0) {
+      if (!edges.map((edge) => edge.cursor).includes(cursor)) {
+        hasNextPage = true;
+      }
+    }
+    
     pageInfo = {
       hasPreviousPage: hasPreviousPage,
-      hasNextPage: oppRecords.length > 0 ? true : false,
+      hasNextPage: oppRecords.length > 0 || hasNextPage ? true : false,
       startCursor: edges.length > 0 ? edges[0].cursor : null,
       endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null,
     };
