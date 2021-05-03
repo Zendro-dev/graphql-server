@@ -1,21 +1,9 @@
-# IntelliJ Idea project settings folder
-.idea
-
 # NPM package manager temporary files and folders
 node_modules
 npm-debug.log
 
 # ModelGen output folders
-#migrations
-models/adapters/*
-!models/adapters/index.js
-models/distributed
-models/generic
-models/sql/*
-!models/sql/index.js
-models/zendro-server
-#patches
-#resolvers
-#schemas
 seeders
-#validations
+
+# User secret env vars
+.env
