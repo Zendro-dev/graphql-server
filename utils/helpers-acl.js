@@ -1,5 +1,5 @@
-const secret = 'something-secret';
 const jwt =  require('jsonwebtoken');
+const { JWT_SECRET } = require('../config/globals');
 
 //TODO: Use this routines through all the code to have them in one place
 
@@ -7,7 +7,7 @@ module.exports = {
     getTokenFromContext: function (context) {
         let token_bearer =  context.request.headers["authorization"];
         let token = token_bearer.replace("Bearer ","");
-        let decoded = jwt.verify(token, secret);
+        let decoded = jwt.verify(token, JWT_SECRET);
         return decoded;
     },
 
@@ -17,6 +17,6 @@ module.exports = {
             id: 1,
             email: email,
             roles: "admin"
-        }, 'something-secret', { expiresIn: '1h' });
+        }, JWT_SECRET, { expiresIn: '1h' });
     }*/
 };
