@@ -12,7 +12,7 @@ const helper = require("./utils/helper");
 const nodejq = require("node-jq");
 const { JSONPath } = require("jsonpath-plus");
 const errors = require("./utils/errors");
-const { formatError } = require("graphql");
+const { formatError, graphql } = require("graphql");
 let models = require(path.join(__dirname, "models", "index.js"));
 const initializeStorageHandlersForModels = require(path.join(
   __dirname,
