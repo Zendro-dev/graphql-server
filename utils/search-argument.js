@@ -348,11 +348,13 @@ module.exports = class search {
               `'%${arrayDelimiter}${this.value}${arrayDelimiter}%'`,
               `'%${arrayDelimiter}${this.value}'`,
             ]
-          : [
+          : stringType.includes(type.replace(/\s+/g, "").slice(1, -1))
+          ? [
               `'["${this.value}",%'`,
               `'%,"${this.value}",%'`,
               `'%,"${this.value}"]'`,
-            ];
+            ]
+          : [`'[${this.value},%'`, `'%,${this.value},%'`, `'%,${this.value}]'`];
       let value = this.value;
       if (arrayType && this.operator === "in") {
         value = `'${this.value}'`;
