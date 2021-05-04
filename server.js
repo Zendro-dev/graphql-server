@@ -181,11 +181,7 @@ app.post("/meta_query", cors(), async (req, res, next) => {
         if (output) {
           if (helper.isNotUndefinedAndNotNull(jq)) {
             // jq
-            output = await nodejq
-              .run(jq, graphQlResponse.data, { input: "json", output: "json" })
-              .catch((err) => {
-                throw err;
-              });
+            output = await nodejq.run(jq, graphQlResponse.data, { input: "json", output: "json" });
           } else {
             // JSONPath
             output = JSONPath({
