@@ -18,7 +18,7 @@ module.exports.queryData = (query, client, storageType) => {
   return new Promise((resolve, reject) => {
     client.execute({
       query: query,
-      data: (data, columns) => {
+      data: (error, data, columns) => {
         resolve([columns, data]);
       },
       success: () => {
