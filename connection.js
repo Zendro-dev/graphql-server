@@ -5,6 +5,7 @@ const AWS = require("aws-sdk");
 const presto = require("presto-client");
 const cassandraDriver = require("cassandra-driver");
 const { queryData } = require("./utils/presto_helper");
+const os = require("os");
 const Op = Sequelize.Op;
 storageConfig.operatorsAliases = {
   $eq: Op.eq,
@@ -106,6 +107,7 @@ const setupAmazonS3 = async () => {
  */
 const addConnectionInstances = async () => {
   let connectionInstances = new Map();
+  const user = os.userInfo().username;
   for (let key of Object.keys(storageConfig)) {
     let storageType = storageConfig[key].storageType;
     if (
@@ -152,6 +154,7 @@ const addConnectionInstances = async () => {
       connectionInstances.set(key, {
         storageType,
         connection: new presto.Client({
+          user: `"${user}"`,
           host: storageConfig[key].trino_host,
           port: storageConfig[key].trino_port,
           catalog: storageConfig[key].catalog,
@@ -167,6 +170,7 @@ const addConnectionInstances = async () => {
       connectionInstances.set(key, {
         storageType,
         connection: new presto.Client({
+          user: `"${user}"`,
           host: storageConfig[key].presto_host,
           port: storageConfig[key].presto_port,
           catalog: storageConfig[key].catalog,
