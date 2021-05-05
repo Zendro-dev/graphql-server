@@ -100,7 +100,7 @@ module.exports.mergeTrinoFilters = function (filterA, filterB, operator) {
   }
   //check: only whereB
   if (!filterA && filterB) {
-    return filterB;
+    return " WHERE " + filterB;
   }
   //check: only whereA
   if (filterA && !filterB) {
