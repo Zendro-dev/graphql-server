@@ -1,6 +1,6 @@
 const jwt =  require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const secret = 'something-secret';
+const { JWT_SECRET } = require('../config/globals');
 
 
 /**
@@ -24,7 +24,7 @@ module.exports =  function( context, resource, permission ) {
   console.log("TOKEN",typeof token, token);
   try{
     //Identify user from context
-    let decoded = jwt.verify(token, secret);
+    let decoded = jwt.verify(token, JWT_SECRET);
 
     //check for permissions from specific roles
      return context.acl.areAnyRolesAllowed(decoded.roles, resource, permission);
