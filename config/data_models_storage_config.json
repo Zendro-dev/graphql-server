@@ -38,11 +38,6 @@
   },
   "default-trino": {
     "storageType": "trino",
-    "username": "sciencedb",
-    "password": "sciencedb",
-    "database": "sciencedb_development",
-    "db_host": "gql_postgres1",
-    "db_port": "5432",
     "catalog":"postgresql",
     "schema":"public",
     "trino_host": "127.0.0.1",
@@ -50,11 +45,6 @@
   },
   "default-presto": {
     "storageType": "presto",
-    "username": "sciencedb",
-    "password": "sciencedb",
-    "database": "sciencedb_development",
-    "db_host": "gql_postgres1",
-    "db_port": "5432",
     "catalog":"postgresql",
     "schema":"public",
     "presto_host": "127.0.0.1",

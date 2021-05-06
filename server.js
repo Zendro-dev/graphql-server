@@ -12,7 +12,7 @@ const helper = require("./utils/helper");
 const nodejq = require("node-jq");
 const { JSONPath } = require("jsonpath-plus");
 const errors = require("./utils/errors");
-const { formatError } = require("graphql");
+const { formatError, graphql } = require("graphql");
 let models = require(path.join(__dirname, "models", "index.js"));
 const initializeStorageHandlersForModels = require(path.join(
   __dirname,
@@ -47,7 +47,7 @@ app.use((req, res, next) => {
 // Force users to sign in to get access to anything else than '/login'
 console.log("REQUIRE: ", globals.REQUIRE_SIGN_IN);
 if (globals.REQUIRE_SIGN_IN) {
-  app.use(jwt({ secret: "something-secret" }).unless({ path: ["/login"] }));
+  app.use(jwt({ secret: globals.JWT_SECRET }).unless({ path: ['/login'] }));
 }
 
 /* Temporary solution:  acl rules set */
@@ -150,7 +150,7 @@ app.use(
 );
 
 let metaQueryCorsOptions = {
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "jq", "jsonPath"],
 };
 app.options("/meta_query", cors(metaQueryCorsOptions));
 app.post("/meta_query", cors(), async (req, res, next) => {
@@ -164,40 +164,34 @@ app.post("/meta_query", cors(), async (req, res, next) => {
 
     if (req != null) {
       if ((await checkAuthorization(context, "meta_query", "")) === true) {
-        let queries = req.body.queries;
-        let jq = req.body.jq;
-        let jsonPath = req.body.jsonPath;
+        const query = req.body.query;
+        const jq = req.headers.jq;
+        const jsonPath = req.headers.jsonPath;
+        const variables = req.body.variables;
         helper.eitherJqOrJsonpath(jq, jsonPath);
 
-        if (!Array.isArray(queries)) {
-          let newQueries = [queries];
-          queries = newQueries;
-        }
-
-        let graphQlResponses = await helper.handleGraphQlQueriesForMetaQuery(
+        const graphQlResponse = await graphql(
           Schema,
+          query,
           resolvers,
-          queries,
-          context
+          context,
+          variables
         );
-        let output = null;
-
-        if (helper.isNotUndefinedAndNotNull(jq)) {
-          // jq
-          output = await nodejq
-            .run(jq, graphQlResponses, { input: "json", output: "json" })
-            .catch((err) => {
-              throw err;
+        let output = graphQlResponse.data;
+        if (output) {
+          if (helper.isNotUndefinedAndNotNull(jq)) {
+            // jq
+            output = await nodejq.run(jq, graphQlResponse.data, { input: "json", output: "json" });
+          } else {
+            // JSONPath
+            output = JSONPath({
+              path: jsonPath,
+              json: graphQlResponse.data,
+              wrap: false,
             });
-        } else {
-          // JSONPath
-          output = JSONPath({
-            path: jsonPath,
-            json: graphQlResponses,
-            wrap: false,
-          });
+          }
         }
-        res.json(output);
+        res.json({ data: output, errors: graphQlResponse.errors });
         next();
       } else {
         throw new Error("You don't have authorization to perform this action");

@@ -2508,7 +2508,6 @@ module.exports.buildPageInfo = function (edges, oppRecords, pagination) {
     }
     // reverse edges for correct output order
     edges = edges.reverse();
-
     let cursor = pagination.before ? pagination.before : null;
     let hasNextPage = false;
     if (cursor && oppRecords.length === 0) {
@@ -2516,7 +2515,6 @@ module.exports.buildPageInfo = function (edges, oppRecords, pagination) {
         hasNextPage = true;
       }
     }
-
     pageInfo = {
       hasPreviousPage: hasPreviousPage,
       hasNextPage: oppRecords.length > 0 || hasNextPage ? true : false,
