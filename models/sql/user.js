@@ -17,6 +17,7 @@ const helper = require('../../utils/helper');
 const models = require(path.join(__dirname, '..', 'index.js'));
 const moment = require('moment');
 const errorHelper = require('../../utils/errors');
+const bcrypt = require('bcrypt');
 // An exact copy of the the model definition that comes from the .json file
 const definition = {
     model: 'user',
@@ -182,6 +183,8 @@ module.exports = class user extends Sequelize.Model {
         await validatorUtil.validateData('validateForCreate', this, input);
         input = user.preWriteCast(input)
         try {
+            let hash = await bcrypt.hash(input.password, globals.SALT_ROUNDS);
+            input.password = hash;
             const result = await this.sequelize.transaction(async (t) => {
                 let item = await super.create(input, {
                     transaction: t
@@ -217,6 +220,11 @@ module.exports = class user extends Sequelize.Model {
         await validatorUtil.validateData('validateForUpdate', this, input);
         input = user.preWriteCast(input)
         try {
+            //check if password wants to be updated:
+            if(input.password !== undefined){
+                let hash = await bcrypt.hash(input.password, globals.SALT_ROUNDS);
+                input.password = hash;
+            }
             let result = await this.sequelize.transaction(async (t) => {
                 let to_update = await super.findByPk(input[this.idAttribute()]);
                 if (to_update === null) {

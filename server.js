@@ -163,10 +163,10 @@ app.post("/meta_query", cors(), async (req, res, next) => {
     };
 
     if (req != null) {
-      if ((await checkAuthorization(context, "meta_query", "")) === true) {
+      if ((await checkAuthorization(context, "meta_query", "execute")) === true) {
         const query = req.body.query;
         const jq = req.headers.jq;
-        const jsonPath = req.headers.jsonPath;
+        const jsonPath = req.headers.jsonpath;
         const variables = req.body.variables;
         helper.eitherJqOrJsonpath(jq, jsonPath);
 
