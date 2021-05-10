@@ -160,6 +160,7 @@ const addConnectionInstances = async () => {
           catalog: storageConfig[key].catalog,
           schema: storageConfig[key].schema,
           source: "nodejs-client",
+          engine: "trino",
         }),
       });
     } else if (
@@ -176,6 +177,7 @@ const addConnectionInstances = async () => {
           catalog: storageConfig[key].catalog,
           schema: storageConfig[key].schema,
           source: "nodejs-client",
+          engine: "presto",
         }),
       });
     }
@@ -211,8 +213,7 @@ exports.checkConnections = async () => {
           const trino_conf = storageConfig["default-trino"];
           await queryData(
             `SHOW TABLES FROM ${trino_conf.catalog}.${trino_conf.schema}`,
-            instance.connection,
-            trino_conf.storageType
+            instance.connection
           );
         } catch (error) {
           throw error;
@@ -222,8 +223,7 @@ exports.checkConnections = async () => {
           const presto_conf = storageConfig["default-presto"];
           await queryData(
             `SHOW TABLES FROM ${presto_conf.catalog}.${presto_conf.schema}`,
-            instance.connection,
-            presto_conf.storageType
+            instance.connection
           );
         } catch (error) {
           throw error;

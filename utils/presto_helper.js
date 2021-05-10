@@ -3,18 +3,10 @@ const searchArg = require("./search-argument");
  * queryData - send query to client with correct header
  * @param {string} query search argument for filtering records
  * @param {object} client presto/trino client
- * @param {string} storageType storage type ("Presto" or "Trino")
  * @return {object | null} query result
  */
-module.exports.queryData = (query, client, storageType) => {
-  let Headers = require("presto-client/lib/presto-client/headers").Headers;
-  for (let key of Object.keys(Headers)) {
-    if (storageType === "trino") {
-      Headers[key] = Headers[key].replace("Presto", "Trino");
-    } else if (storageType === "presto") {
-      Headers[key] = Headers[key].replace("Trino", "Presto");
-    }
-  }
+
+module.exports.queryData = (query, client) => {
   return new Promise((resolve, reject) => {
     client.execute({
       query: query,
