@@ -39,14 +39,14 @@ _NOTE: Databases should be already configured locally in `config/data_models_sto
 * `MAIL_PASSWORD` - Sender email account password.
 
 ### Optional (with sensible defaults)
-* `ERROR_LOG` - Debug logs verbosity. Can be either "verbose" or "compact".
-* `EXPORT_TIME_OUT` - Maximum amount of time before the server throws a timeout error when exporting data.
-* `LIMIT_RECORDS` - Maximum number of records that each request can return, default value is 10000.
+* `ERROR_LOG` - Debug logs verbosity. Can be either "verbose" or "compact". Default value is `compact`.
+* `EXPORT_TIME_OUT` - Maximum amount of time in milliseconds before the server throws a timeout error when exporting data. Default is `3600`.
+* `LIMIT_RECORDS` - Maximum number of records that each request can return, default value is `10000`.
 * `PORT` - The port where the app is listening, default value is `3000`
-* `POST_REQUEST_MAX_BODY_SIZE`
-* `MAX_TIME_OUT` - Maximum number of milliseconds that a zendro server will wait to connect with another zendro server.
-* `REQUIRE_SIGN_IN` - Boolean to toggle the required sign in to the graphql server
-* `SALT_ROUNDS`
+* `POST_REQUEST_MAX_BODY_SIZE` - Maximum size of the GraphQL request in MB. Default is `1mb`.
+* `MAX_TIME_OUT` - Maximum number of milliseconds that a zendro server will wait to connect with another zendro server. Default value is `2000`.
+* `REQUIRE_SIGN_IN` - Boolean to toggle the required sign in to the graphql server. Default is `true`.
+* `SALT_ROUNDS` - Number of salt rounds when hashing a new password. Default is `10`.
 
 
 
