@@ -3,8 +3,8 @@ require('dotenv').config();
 /**
  * Mandatory variables
  */
-const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN,
-const JWT_SECRET = process.env.JWT_SECRET,
+const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!ALLOW_ORIGIN || !JWT_SECRET) {
   throw new Error('Some mandatory environment variables have not been set\n', {
@@ -53,7 +53,7 @@ const SALT_ROUNDS = process.env.SALT_ROUNDS || 10;
 const MAX_TIME_OUT = process.env.MAX_TIME_OUT || 2000;
 const EXPORT_TIME_OUT = process.env.EXPORT_TIME_OUT || 3600
 
-module.exports = {
+const config = {
   LIMIT_RECORDS,
   PORT,
   ALLOW_ORIGIN,
@@ -69,3 +69,5 @@ module.exports = {
   MAIL_PASSWORD,
   EXPORT_TIME_OUT,
 }
+
+module.exports = config
