@@ -26,13 +26,29 @@ The script ```$ migrateDbAndStartServer.sh``` will create the tables specified i
 _NOTE: Databases should be already configured locally in `config/data_models_storage_config.json`_.
 
 
-### Environment Variables
+## Environment Variables
 
-* `PORT` - The port where the app is listening, default value is `3000`
-* `ALLOW_ORIGIN` - In development mode we need to specify the header `Access-Control-Allow-Origin` so the SPA application can communicate with the server, default value is `http://localhost:8080`.
+### Mandatory
+* `ALLOW_ORIGIN` - Sets the `Access-Control-Allow-Origin` header to the specified value.
+* `JWT_SECRET` - The secret string used to sign authorization tokens.
+
+### Optional (without defaults)
+* `MAIL_SERVICE` - For bulk add operations, the email service to use for sending progress reports.
+* `MAIL_HOST` - Email service host (usually SMTP config).
+* `MAIL_ACCOUNT` - Sender email account address.
+* `MAIL_PASSWORD` - Sender email account password.
+
+### Optional (with sensible defaults)
+* `ERROR_LOG` - Debug logs verbosity. Can be either "verbose" or "compact".
+* `EXPORT_TIME_OUT` - Maximum amount of time before the server throws a timeout error when exporting data.
 * `LIMIT_RECORDS` - Maximum number of records that each request can return, default value is 10000.
+* `PORT` - The port where the app is listening, default value is `3000`
+* `POST_REQUEST_MAX_BODY_SIZE`
 * `MAX_TIME_OUT` - Maximum number of milliseconds that a zendro server will wait to connect with another zendro server.
 * `REQUIRE_SIGN_IN` - Boolean to toggle the required sign in to the graphql server
+* `SALT_ROUNDS`
+
+
 
 ## Examples
 
