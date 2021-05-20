@@ -220,7 +220,40 @@ module.exports = class search {
       case "in":
         return ` ${operator.toUpperCase()} `;
       default:
-        throw new Error(`Operator ${operator} not supported`);
+        throw new Error(`Operator ${operator} is not supported`);
+    }
+  }
+  /**
+   *
+   * @param {*} operator
+   */
+  transformNeo4jOperator(operator) {
+    if (operator === undefined) {
+      return;
+    }
+    switch (operator) {
+      case "eq":
+        return " = ";
+      case "ne":
+        return " <> ";
+      case "lt":
+        return " < ";
+      case "gt":
+        return " > ";
+      case "lte":
+        return " <= ";
+      case "gte":
+        return " >= ";
+      case "regexp":
+        return " =~ ";
+      case "contains":
+      case "and":
+      case "or":
+      case "not":
+      case "in":
+        return ` ${operator.toUpperCase()} `;
+      default:
+        throw new Error(`Operator ${operator} is not supported`);
     }
   }
   /**
@@ -422,5 +455,74 @@ module.exports = class search {
     }
 
     return searchsInAmazonS3;
+  }
+  /**
+   * toNeo4j - Convert recursive search instance to search string for use in Cypher
+   *
+   * @param{string} idAttribute - The name of the ID attribute
+   *
+   * @returns{string} Translated search instance
+   */
+  toNeo4j(dataModelDefinition) {
+    let searchsInNeo4j = "";
+    let type = dataModelDefinition[this.field];
+    const transformedOperator = this.transformNeo4jOperator(this.operator);
+    const stringType = ["String", "Date", "DateTime", "Time"];
+    const logicOperaters = ["and", "or", "not"];
+    if (
+      this.operator === undefined ||
+      (this.value === undefined && this.search === undefined)
+    ) {
+      return searchsInNeo4j;
+    } else if (this.search === undefined && this.field === undefined) {
+      searchsInNeo4j = transformedOperator + this.value;
+    } else if (this.search === undefined) {
+      let arrayType = type != undefined && type.replace(/\s+/g, "")[0] === "[";
+      let value = this.value;
+      if (Array.isArray(value)) {
+        if (
+          stringType.includes(type) ||
+          stringType.includes(type.replace(/\s+/g, "").slice(1, -1))
+        ) {
+          value = `[${value.map((e) => `"${e}"`)}]`;
+        } else {
+          value = `[${value.map((e) => `${e}`)}]`;
+        }
+      } else {
+        if (
+          stringType.includes(type) ||
+          stringType.includes(type.replace(/\s+/g, "").slice(1, -1))
+        ) {
+          value = `'${value}'`;
+        }
+      }
+      if (arrayType && this.operator === "in") {
+        searchsInNeo4j = Array.isArray(this.value)
+          ? "ALL(x IN " + value + " WHERE x IN n." + this.field + ")"
+          : value + " IN n." + this.field;
+      } else {
+        // eq: array data = array value
+        // in: primitive data in array value
+        searchsInNeo4j = "n." + this.field + transformedOperator + value;
+      }
+    } else if (logicOperaters.includes(this.operator)) {
+      if (this.operator === "not") {
+        let new_search = new search(this.search[0]);
+        searchsInNeo4j =
+          transformedOperator + "(" + new_search.toNeo4j(dataModelDefinition);
+      } else {
+        searchsInNeo4j = this.search
+          .map((singleSearch) =>
+            new search(singleSearch).toNeo4j(dataModelDefinition)
+          )
+          .join(transformedOperator);
+      }
+    } else {
+      throw new Error(
+        "Statement not supported by Neo4j:\n" + JSON.stringify(this, null, 2)
+      );
+    }
+
+    return searchsInNeo4j;
   }
 };

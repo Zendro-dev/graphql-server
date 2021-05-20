@@ -5,8 +5,7 @@
     "password": "sciencedb",
     "database": "sciencedb_development",
     "host": "127.0.0.1",
-    "dialect": "postgres",
-    "port": "1234"
+    "dialect": "postgres"
   },
   "default-mongodb": {
     "storageType": "mongodb",
@@ -49,5 +48,13 @@
     "schema":"public",
     "presto_host": "127.0.0.1",
     "presto_port": "8081"
+  },
+  "default-neo4j": {
+    "storageType": "neo4j",
+    "username": "neo4j",
+    "password": "sciencedb",
+    "database": "neo4j",
+    "host": "127.0.0.1",
+    "port": "7687"
   }
 }

@@ -9,6 +9,7 @@ let models = {
   amazonS3: {},
   trino: {},
   presto: {},
+  neo4j: {},
 };
 const storageTypes = Object.keys(models);
 module.exports = models;

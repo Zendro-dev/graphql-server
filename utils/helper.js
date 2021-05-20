@@ -2574,7 +2574,14 @@ module.exports.initializeStorageHandlersForModels = async (models) => {
     }
   });
 
-  const storageTypes = ["mongodb", "cassandra", "amazonS3", "trino", "presto"];
+  const storageTypes = [
+    "mongodb",
+    "cassandra",
+    "amazonS3",
+    "trino",
+    "presto",
+    "neo4j",
+  ];
   for (let storage of storageTypes) {
     console.log(`assign storage handler to ${storage} models`);
 
@@ -2613,7 +2620,14 @@ module.exports.initializeStorageHandlersForAdapters = async (adapters) => {
     console.log("assign storage handler to adapter: " + name);
   }
 
-  const storageTypes = ["mongodb", "cassandra", "amazonS3", "trino", "presto"];
+  const storageTypes = [
+    "mongodb",
+    "cassandra",
+    "amazonS3",
+    "trino",
+    "presto",
+    "neo4j",
+  ];
   for (let storage of storageTypes) {
     console.log(`assign storage handler to ${storage} adapters`);
 

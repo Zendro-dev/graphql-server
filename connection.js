@@ -4,6 +4,7 @@ const { MongoClient } = require("mongodb");
 const AWS = require("aws-sdk");
 const presto = require("presto-client");
 const cassandraDriver = require("cassandra-driver");
+const neo4j = require("neo4j-driver");
 const { queryData } = require("./utils/presto_helper");
 const os = require("os");
 const Op = Sequelize.Op;
@@ -180,6 +181,23 @@ const addConnectionInstances = async () => {
           engine: "presto",
         }),
       });
+    } else if (
+      storageConfig.hasOwnProperty(key) &&
+      key !== "operatorsAliases" &&
+      storageType === "neo4j"
+    ) {
+      // note: https://stackoverflow.com/a/62816512/8132085
+      connectionInstances.set(key, {
+        storageType,
+        connection: neo4j.driver(
+          `"neo4j://${storageConfig[key].host}:${storageConfig[key].port}"`,
+          neo4j.auth.basic(
+            storageConfig[key].username,
+            storageConfig[key].password
+          ),
+          { disableLosslessIntegers: true }
+        ),
+      });
     }
   }
   return connectionInstances;
@@ -228,6 +246,10 @@ exports.checkConnections = async () => {
         } catch (error) {
           throw error;
         }
+      } else if (instance.storageType === "neo4j") {
+        await instance.connection.verifyConnectivity({
+          database: storageConfig["default-neo4j"].database,
+        });
       }
       checks.push({ key, valid: true });
     } catch (exception) {

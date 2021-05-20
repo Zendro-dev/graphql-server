@@ -9,6 +9,7 @@ let adapters = {
   amazonS3: {},
   trino: {},
   presto: {},
+  neo4j: {},
 };
 module.exports = adapters;
 getModulesSync(__dirname).forEach((file) => {
@@ -30,6 +31,7 @@ getModulesSync(__dirname).forEach((file) => {
     case "cassandra-adapter":
     case "trino-adapter":
     case "presto-adapter":
+    case "neo4j-adapter":
       adapters[adapter.adapterType.split("-")[0]][adapter.adapterName] =
         adapter.definition;
       adapters[adapter.adapterName] = adapter;
