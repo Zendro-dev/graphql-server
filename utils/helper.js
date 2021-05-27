@@ -21,6 +21,7 @@ const {
   ConnectionError,
   getAndConnectDataModelClass,
 } = require("../connection");
+const config = require("../config/data_models_storage_config.json");
 /**
  * paginate - Creates pagination argument as needed in sequelize cotaining limit and offset accordingly to the current
  * page implicit in the request info.
@@ -2544,6 +2545,41 @@ module.exports.buildEdgeObject = function (records) {
   return edges;
 };
 
+module.exports.createIndexes = async (storage, model, definition, database) => {
+  if ("neo4j" === storage) {
+    const driver = await model.storageHandler;
+    const session = driver.session({
+      database: config[database || `default-${storage}`].database,
+    });
+    try {
+      const modelName = definition.model;
+      const label =
+        modelName.length === 1
+          ? modelName.toUpperCase()
+          : modelName.slice(0, 1).toUpperCase() +
+            modelName.slice(1, modelName.length);
+      const id = definition.internalId ?? definition.id.name;
+
+      await session.run(
+        `CREATE INDEX index_${id} IF NOT EXISTS FOR (n:${label}) ON (n.${id})`
+      );
+    } catch (error) {
+      throw error;
+    } finally {
+      await session.close();
+    }
+  } else if ("mongodb" === storage) {
+    try {
+      const db = await model.storageHandler;
+      const collection = await db.collection(definition.model);
+      const id = definition.internalId ?? definition.id.name;
+      await collection.createIndex({ [id]: 1 });
+    } catch (error) {
+      throw error;
+    }
+  }
+};
+
 module.exports.initializeStorageHandlersForModels = async (models) => {
   console.log("initialize storage handlers for models");
   const connectionInstances = await getConnectionInstances();
@@ -2552,8 +2588,9 @@ module.exports.initializeStorageHandlersForModels = async (models) => {
 
   for (let name of Object.keys(models.sql)) {
     const database = models.sql[name].database;
-    const connection = connectionInstances.get(database || "default-sql")
-      .connection;
+    const connection = connectionInstances.get(
+      database || "default-sql"
+    ).connection;
     if (!connection) throw new ConnectionError(models.sql[name]);
 
     // setup storageHandler
@@ -2597,6 +2634,14 @@ module.exports.initializeStorageHandlersForModels = async (models) => {
       getAndConnectDataModelClass(model, connection);
 
       console.log("assign storage handler to model: " + name);
+      if (["neo4j", "mongodb"].includes(storage)) {
+        await module.exports.createIndexes(
+          storage,
+          model,
+          models[storage][name],
+          database
+        );
+      }
     }
   }
 };
@@ -2608,8 +2653,9 @@ module.exports.initializeStorageHandlersForAdapters = async (adapters) => {
 
   for (let name of Object.keys(adapters.sql)) {
     const database = adapters.sql[name].database;
-    const connection = connectionInstances.get(database || "default-sql")
-      .connection;
+    const connection = connectionInstances.get(
+      database || "default-sql"
+    ).connection;
     if (!connection) throw new ConnectionError(adapters.sql[name]);
 
     // setup storageHandler
@@ -2643,6 +2689,14 @@ module.exports.initializeStorageHandlersForAdapters = async (adapters) => {
       getAndConnectDataModelClass(adapter, connection);
 
       console.log("assign storage handler to adapter: " + name);
+      if (["neo4j", "mongodb"].includes(storage)) {
+        await module.exports.createIndexes(
+          storage,
+          adapter,
+          adapters[storage][name],
+          database
+        );
+      }
     }
   }
 };
