@@ -163,39 +163,41 @@ app.post("/meta_query", cors(), async (req, res, next) => {
     };
 
     if (req != null) {
-      if ((await checkAuthorization(context, "meta_query", "execute")) === true) {
-        const query = req.body.query;
-        const jq = req.headers.jq;
-        const jsonPath = req.headers.jsonpath;
-        const variables = req.body.variables;
-        helper.eitherJqOrJsonpath(jq, jsonPath);
+      const query = req.body.query;
+      const jq = req.headers.jq;
+      const jsonPath = req.headers.jsonpath;
+      const variables = req.body.variables;
 
-        const graphQlResponse = await graphql(
-          Schema,
-          query,
-          resolvers,
-          context,
-          variables
-        );
-        let output = graphQlResponse.data;
-        if (output) {
-          if (helper.isNotUndefinedAndNotNull(jq)) {
-            // jq
-            output = await nodejq.run(jq, graphQlResponse.data, { input: "json", output: "json" });
-          } else {
-            // JSONPath
-            output = JSONPath({
-              path: jsonPath,
-              json: graphQlResponse.data,
-              wrap: false,
-            });
-          }
+      helper.eitherJqOrJsonpath(jq, jsonPath);
+
+      const graphQlResponse = await graphql(
+        Schema,
+        query,
+        resolvers,
+        context,
+        variables
+      );
+
+      let output = graphQlResponse.data;
+      const resolversHaveData = Object.values(output).some((val) => val);
+
+      if (resolversHaveData) {
+        if (helper.isNotUndefinedAndNotNull(jq)) {
+          // jq
+          output = await nodejq.run(jq, graphQlResponse.data, { input: "json", output: "json" });
+        } else {
+          // JSONPath
+          output = JSONPath({
+            path: jsonPath,
+            json: graphQlResponse.data,
+            wrap: false,
+          });
         }
-        res.json({ data: output, errors: graphQlResponse.errors });
-        next();
-      } else {
-        throw new Error("You don't have authorization to perform this action");
       }
+
+      res.json({ data: output, errors: graphQlResponse.errors });
+
+      next();
     }
   } catch (error) {
     res.json({ data: null, errors: [formatError(error)] });
