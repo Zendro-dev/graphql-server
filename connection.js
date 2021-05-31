@@ -190,7 +190,7 @@ const addConnectionInstances = async () => {
       connectionInstances.set(key, {
         storageType,
         connection: neo4j.driver(
-          `"neo4j://${storageConfig[key].host}:${storageConfig[key].port}"`,
+          `bolt://${storageConfig[key].host}:${storageConfig[key].port}`,
           neo4j.auth.basic(
             storageConfig[key].username,
             storageConfig[key].password
