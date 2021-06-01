@@ -20,10 +20,11 @@ crateHeaderCSV = function(attributes){
 jsonToCSV = function(row_data, attributes){
   let str_csv = "";
   attributes.forEach( att => {
-    if(row_data[att]===null || row_data[att] === undefined){
+    if(row_data[att]===null || row_data[att] === undefined || (Array.isArray(row_data[att]) && row_data[att].length === 0)){
       str_csv+='NULL,';
     }else {
-      str_csv+= row_data[att]+",";
+      str_csv += Array.isArray(row_data[att]) ? row_data[att].join(';') : row_data[att];
+      str_csv += ','
     }
   })
 
