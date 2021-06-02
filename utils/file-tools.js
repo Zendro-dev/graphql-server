@@ -1,12 +1,11 @@
-const XLSX = require('xlsx');
-const Promise = require('bluebird');
-const promise_csv_parse = Promise.promisify(require('csv-parse'));
-const csv_parse = require('csv-parse');
-const fs = require('fs');
-const awaitifyStream = require('awaitify-stream');
-const validatorUtil = require('./validatorUtil');
-const admZip = require('adm-zip');
-
+const XLSX = require("xlsx");
+const Promise = require("bluebird");
+const promise_csv_parse = Promise.promisify(require("csv-parse"));
+const csv_parse = require("csv-parse");
+const fs = require("fs");
+const awaitifyStream = require("awaitify-stream");
+const validatorUtil = require("./validatorUtil");
+const admZip = require("adm-zip");
 
 /**
  * replaceNullStringsWithLiteralNulls - Replace null entries of columns with literal null types
@@ -14,18 +13,17 @@ const admZip = require('adm-zip');
  * @param  {array} arrOfObjs Each item correponds to a column represented as object.
  * @return {array}           Each item corresponds to a column and all items have either a valid entry or null type.
  */
-replaceNullStringsWithLiteralNulls = function(arrOfObjs) {
+replaceNullStringsWithLiteralNulls = function (arrOfObjs) {
   console.log(typeof arrOfObjs, arrOfObjs);
-  return arrOfObjs.map(function(csvRow) {
-    Object.keys(csvRow).forEach(function(csvCol) {
-      csvCell = csvRow[csvCol]
-      csvRow[csvCol] = csvCell === 'null' || csvCell === 'NULL' ?
-        null : csvCell
-    })
+  return arrOfObjs.map(function (csvRow) {
+    Object.keys(csvRow).forEach(function (csvCol) {
+      csvCell = csvRow[csvCol];
+      csvRow[csvCol] =
+        csvCell === "null" || csvCell === "NULL" ? null : csvCell;
+    });
     return csvRow;
   });
-}
-
+};
 
 /**
  * parseCsv - parse csv file (string)
@@ -35,17 +33,16 @@ replaceNullStringsWithLiteralNulls = function(arrOfObjs) {
  * @param {array|boolean|function} cols Columns as in csv-parser options.(true if auto-discovered in the first CSV line).
  * @return {array}        Each item correponds to a column represented as object and filtered with replaceNullStringsWithLiteralNulls function.
  */
-exports.parseCsv = function(csvStr, delim, cols) {
-  if (!delim) delim = ","
-  if (typeof cols === 'undefined') cols = true
+exports.parseCsv = function (csvStr, delim, cols) {
+  if (!delim) delim = ",";
+  if (typeof cols === "undefined") cols = true;
   return replaceNullStringsWithLiteralNulls(
     promise_csv_parse(csvStr, {
       delimiter: delim,
-      columns: cols
+      columns: cols,
     })
-  )
-}
-
+  );
+};
 
 /**
  * parseXlsx - description
@@ -53,14 +50,13 @@ exports.parseCsv = function(csvStr, delim, cols) {
  * @param  {string} bstr Xlsx file converted to string
  * @return {array}      Each item correponds to a column represented as object and filtered with replaceNullStringsWithLiteralNulls function.
  */
-exports.parseXlsx = function(bstr) {
+exports.parseXlsx = function (bstr) {
   var workbook = XLSX.read(bstr, {
-    type: "binary"
+    type: "binary",
   });
   var sheet_name_list = workbook.SheetNames;
   return replaceNullStringsWithLiteralNulls(
-    XLSX.utils.sheet_to_json(
-      workbook.Sheets[sheet_name_list[0]])
+    XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]])
   );
 };
 
@@ -70,9 +66,9 @@ exports.parseXlsx = function(bstr) {
  *
  * @param {String} path - A path to the file
  */
-exports.deleteIfExists = function(path) {
+exports.deleteIfExists = function (path) {
   console.log(`Removing ${path}`);
-  fs.unlink(path, function(err) {
+  fs.unlink(path, function (err) {
     // file may be already deleted
   });
 };
@@ -85,9 +81,9 @@ exports.deleteIfExists = function(path) {
  * @return {Object} A modified clone of the argument pojo in which all String
  * "NULL" or "null" values are deleted.
  */
-exports.replacePojoNullValueWithLiteralNull = function(pojo) {
+exports.replacePojoNullValueWithLiteralNull = function (pojo) {
   if (pojo === null || pojo === undefined) {
-    return null
+    return null;
   }
   let res = Object.assign({}, pojo);
   Object.keys(res).forEach((k) => {
@@ -95,9 +91,8 @@ exports.replacePojoNullValueWithLiteralNull = function(pojo) {
       delete res[k];
     }
   });
-  return res
+  return res;
 };
-
 
 /**
  * castCsv - Cast values from csv file when converting to object.
@@ -108,51 +103,51 @@ exports.replacePojoNullValueWithLiteralNull = function(pojo) {
  * @param  {Object} attributes_type Key is the name of the attribute/column as given in the json file of the model, value is the type of the attribute.
  * @return {any}                 The value casted according to the attribute type given in attributes_type.
  */
-castCsv = function( value, column, attributes_type, array_delimiter=";"){
-  if(!(typeof value === "string" && value.match(/\s*null\s*/i) )){
-    switch ( attributes_type[column] ) {
-      case 'String':
+castCsv = function (value, column, attributes_type, array_delimiter = ";") {
+  if (!(typeof value === "string" && value.match(/\s*null\s*/i))) {
+    switch (attributes_type[column]) {
+      case "String":
         value = String(value);
         break;
-      case 'Int':
+      case "Int":
         value = Number(value);
         break;
-      case 'Date':
+      case "Date":
         value = String(value);
         break;
-      case 'Time':
+      case "Time":
         value = String(value);
         break;
-      case 'DateTime':
+      case "DateTime":
         value = String(value);
         break;
-      case 'Boolean':
-        if(value === 'true') value = true;
-        if(value === 'false') value = false;
+      case "Boolean":
+        if (value === "true") value = true;
+        if (value === "false") value = false;
         break;
-      case 'Float':
+      case "Float":
         value = Number(value);
         break;
-      case '[String]':
-        value = value.split(array_delimiter)
+      case "[String]":
+        value = value.split(array_delimiter);
         break;
-      case '[Int]':
-        value = value.split(array_delimiter).map(x=>parseInt(x))
+      case "[Int]":
+        value = value.split(array_delimiter).map((x) => parseInt(x));
         break;
-      case '[Date]':
-        value = value.split(array_delimiter)
+      case "[Date]":
+        value = value.split(array_delimiter);
         break;
-      case '[Time]':
-        value = value.split(array_delimiter)
+      case "[Time]":
+        value = value.split(array_delimiter);
         break;
-      case '[DateTime]':
-        value = value.split(array_delimiter)
+      case "[DateTime]":
+        value = value.split(array_delimiter);
         break;
-      case '[Boolean]':
-        value.split(array_delimiter).map(x=> x === 'true')
+      case "[Boolean]":
+        value.split(array_delimiter).map((x) => x === "true");
         break;
-      case '[Float]':
-        value = value.split(array_delimiter).map(x=>parseFloat(x))
+      case "[Float]":
+        value = value.split(array_delimiter).map((x) => parseFloat(x));
         break;
 
       default:
@@ -161,8 +156,7 @@ castCsv = function( value, column, attributes_type, array_delimiter=";"){
     }
   }
   return value;
-}
-
+};
 
 /**
  * Parse by streaming a csv file and create the records in the correspondant table
@@ -173,26 +167,32 @@ castCsv = function( value, column, attributes_type, array_delimiter=";"){
  * @param {array|boolean|function} cols - Columns as in csv-parser options.(true if auto-discovered in the first CSV line).
  * @param {string} storageType - Set the storage type(default: "sql").
  */
-exports.parseCsvStream = async function(csvFilePath, model, delim, cols, storageType = "sql", arrayDelim=";") {
-
+exports.parseCsvStream = async function (
+  csvFilePath,
+  model,
+  delim,
+  cols,
+  storageType = "sql",
+  arrayDelim = ";"
+) {
   if (!delim) delim = ",";
-  if (typeof cols === 'undefined') cols = true;
+  if (typeof cols === "undefined") cols = true;
   console.log("TYPEOF", typeof model);
   // Wrap all database actions within a transaction for sequelize:
   let transaction;
   // define mongoDb collection
   let collection;
-  if (storageType === "sql"){
+  if (storageType === "sql") {
     transaction = await model.sequelize.transaction();
-  } else if (storageType === "mongodb"){
-    const db = await model.storageHandler
-    collection = await db.collection('animal')
+  } else if (storageType === "mongodb") {
+    const db = await model.storageHandler;
+    collection = await db.collection("animal");
   }
 
-  let addedFilePath = csvFilePath.substr(0, csvFilePath.lastIndexOf(".")) +
-    ".json";
-  let addedZipFilePath = csvFilePath.substr(0, csvFilePath.lastIndexOf(".")) +
-    ".zip";
+  let addedFilePath =
+    csvFilePath.substr(0, csvFilePath.lastIndexOf(".")) + ".json";
+  let addedZipFilePath =
+    csvFilePath.substr(0, csvFilePath.lastIndexOf(".")) + ".zip";
 
   console.log(addedFilePath);
   console.log(addedZipFilePath);
@@ -204,9 +204,14 @@ exports.parseCsvStream = async function(csvFilePath, model, delim, cols, storage
         csv_parse({
           delimiter: delim,
           columns: cols,
-          cast: function( value, context){
-            return castCsv(value, context.column, model.definition.attributes, arrayDelim);
-          }
+          cast: function (value, context) {
+            return castCsv(
+              value,
+              context.column,
+              model.definition.attributes,
+              arrayDelim
+            );
+          },
         })
       )
     );
@@ -222,45 +227,48 @@ exports.parseCsvStream = async function(csvFilePath, model, delim, cols, storage
     while (null !== (record = await csvStream.readAsync())) {
       record = exports.replacePojoNullValueWithLiteralNull(record);
       try {
-        await validatorUtil.validateData('validateForCreate', model, record);
-        record = model.preWriteCast(record);
-        if (storageType === "sql"){
-          await model.create(record, {
-            transaction: transaction
-          }).then(created => {
-            // this is async, here we just push new line into the parallel thread
-            // synchronization goes at endAsync;
-            addedRecords.writeAsync(`${JSON.stringify(created)}\n`);
-
-          }).catch(error => {
-            console.log(
-              `Caught sequelize error during CSV batch upload: ${JSON.stringify(error)}`
-            );
-            error.record = record;
-            errors.push(error);
-          })
-        } else if (storageType === "mongodb"){
+        await validatorUtil.validateData("validateForCreate", model, record);
+        if (storageType === "sql") {
+          record = model.preWriteCast(record);
+          await model
+            .create(record, {
+              transaction: transaction,
+            })
+            .then((created) => {
+              // this is async, here we just push new line into the parallel thread
+              // synchronization goes at endAsync;
+              addedRecords.writeAsync(`${JSON.stringify(created)}\n`);
+            })
+            .catch((error) => {
+              console.log(
+                `Caught sequelize error during CSV batch upload: ${JSON.stringify(
+                  error
+                )}`
+              );
+              error.record = record;
+              errors.push(error);
+            });
+        } else if (storageType === "mongodb") {
           try {
             const response = await collection.insertOne(record);
             addedRecords.writeAsync(`${JSON.stringify(response.ops[0])}\n`);
-          } catch (error){
+          } catch (error) {
             console.log(
-              `Caught MongoDb error during CSV batch upload: ${JSON.stringify(error)}`
+              `Caught MongoDb error during CSV batch upload: ${JSON.stringify(
+                error
+              )}`
             );
             error.record = record;
             errors.push(error);
           }
         }
-        
       } catch (error) {
         console.log(
           `Validation error during CSV batch upload: ${JSON.stringify(error)}`
         );
-        error['record'] = record;
+        error["record"] = record;
         errors.push(error);
-
       }
-
     }
 
     // close the addedRecords file so it can be sent afterwards
@@ -271,19 +279,23 @@ exports.parseCsvStream = async function(csvFilePath, model, delim, cols, storage
         "Some records could not be submitted. No database changes has been applied.\n";
       message += "Please see the next list for details:\n";
 
-      errors.forEach(function(error) {
+      errors.forEach(function (error) {
         valErrMessages = error.errors.reduce((acc, val) => {
-          return acc.concat(val.dataPath).concat(" ").concat(val.message)
+          return acc
+            .concat(val.dataPath)
             .concat(" ")
-        })
-        message +=
-          `record ${JSON.stringify(error.record)} ${error.message}: ${valErrMessages}; \n`;
+            .concat(val.message)
+            .concat(" ");
+        });
+        message += `record ${JSON.stringify(error.record)} ${
+          error.message
+        }: ${valErrMessages}; \n`;
       });
 
       throw new Error(message.slice(0, message.length - 1));
     }
 
-    if (storageType === "sql"){
+    if (storageType === "sql") {
       await transaction.commit();
     }
 
@@ -297,16 +309,13 @@ exports.parseCsvStream = async function(csvFilePath, model, delim, cols, storage
     // At this moment the parseCsvStream caller is responsible in deleting the
     // addedZipFilePath
     return addedZipFilePath;
-
   } catch (error) {
-
     await transaction.rollback();
 
     exports.deleteIfExists(addedFilePath);
     exports.deleteIfExists(addedZipFilePath);
 
     throw error;
-
   } finally {
     exports.deleteIfExists(addedFilePath);
   }
