@@ -179,7 +179,7 @@ app.post("/meta_query", cors(), async (req, res, next) => {
       );
 
       let output = graphQlResponse.data;
-      const resolversHaveData = Object.values(output).some((val) => val);
+      const resolversHaveData = output ? Object.values(output).some((val) => val) : null;
 
       if (resolversHaveData) {
         if (helper.isNotUndefinedAndNotNull(jq)) {
