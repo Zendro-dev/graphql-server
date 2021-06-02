@@ -5,6 +5,11 @@ const path = require('path');
 
 module.exports = {
     sendEmail: function (dst_email, subj, message, att){
+
+        if (!Globals.MAIL_ACCOUNT || !Globals.MAIL_HOST || !Globals.MAIL_PASSWORD || !Globals.MAIL_SERVICE) {
+            throw new Error('BulkAdd Email Service has not been configured');
+        }
+
         console.log(`${dst_email}, ${message}, ${Globals.MAIL_ACCOUNT}, ${Globals.MAIL_PASSWORD}`);
 
         let transporter = NodeMailer.createTransport(SmtpTransport({
