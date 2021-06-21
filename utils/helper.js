@@ -2713,3 +2713,28 @@ module.exports.copyWithoutUnsetAttributes = function (obj) {
     )
   );
 };
+
+/**
+ * 
+ * @param {object} search search argument as passed to the resolver 
+ * @param {array} ids foreignkey or keys to check
+ * @param {string} idAttribute model id attribute name
+ * @returns 
+ */
+ module.exports.parseFieldResolverSearchArgForCassandra = function(search, ids, idAttribute, hasIdSearch=false) {
+  if (search && search.operator === 'and') {
+    search.search.forEach(searchVal => {
+      hasIdSearch = this.intersectFieldResolverSearchArgs(searchVal, ids, idAttribute, hasIdSearch);
+    }) 
+  } else {
+    if(search && search.field === idAttribute && (search.operator === 'eq' || search.operator === 'in')) {
+      hasIdSearch = true;
+      const valueArr = search.operator === 'eq' ? [search.value] : search.value;
+      const intersection = Array.isArray(ids) ? _.intersection(valueArr, ids) : _.intersection(valueArr, [ids]);
+      search.operator = 'in';
+      search.value = intersection.length > 0 ? intersection.join(',') : [];
+      search.valueType = intersection.length > 0 ? "Array" : undefined;
+    }
+  }
+  return hasIdSearch;
+}
