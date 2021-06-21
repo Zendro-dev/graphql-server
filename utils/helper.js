@@ -2724,7 +2724,7 @@ module.exports.copyWithoutUnsetAttributes = function (obj) {
  module.exports.parseFieldResolverSearchArgForCassandra = function(search, ids, idAttribute, hasIdSearch=false) {
   if (search && search.operator === 'and') {
     search.search.forEach(searchVal => {
-      hasIdSearch = this.intersectFieldResolverSearchArgs(searchVal, ids, idAttribute, hasIdSearch);
+      hasIdSearch = this.parseFieldResolverSearchArgForCassandra(searchVal, ids, idAttribute, hasIdSearch);
     }) 
   } else {
     if(search && search.field === idAttribute && (search.operator === 'eq' || search.operator === 'in')) {
