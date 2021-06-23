@@ -1361,7 +1361,7 @@ module.exports.addSearchField = function (
       search.operator === undefined ||
       (search.value === undefined && search.search === undefined)
     ) {
-      search = {
+      nsearch = {
         field: field,
         value: value,
         operator: operator,
