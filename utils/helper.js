@@ -2719,3 +2719,39 @@ module.exports.copyWithoutUnsetAttributes = function (obj) {
     )
   );
 };
+
+/**
+ * parseFieldResolverSearchArgForCassandra - recursive function to parse the search tree for eq/in searches on the given
+ * "idAttribute" parameter. This function is a workaround for fieldResolvers to a cassandra model.
+ * See https://github.com/Zendro-dev/graphql-server-model-codegen/issues/186 for a details on the issue.
+ * 
+ * WARNING: This workaround only partially solves the problem.
+ *  - cassandra still does not allow SELECT queries on indexed columns with IN clause for the PRIMARY KEY.
+ *  - If there are multiple nodes with searches on the idAttribute cassandra will still throw since multiple
+ *    Equal restrictions on the id field are not allowed
+ *  - This only works for associations where the foreignKey is stored on the side of the cassandra model, since
+ *    IN clauses are only allowed on the primarykey column, not on any foreignkey column.
+ * 
+ * @param {object} search search argument as passed to the resolver 
+ * @param {array} ids foreignkey or keys to check
+ * @param {string} idAttribute model id attribute name
+ * @returns {boolean} hasIdSearch - True if at least one node in the search tree has a eq/in search on the idAttribute
+ *                                  Be aware that this function manipulates the search object given directly.
+ */
+ module.exports.parseFieldResolverSearchArgForCassandra = function(search, ids, idAttribute, hasIdSearch=false) {
+  if (search && search.operator === 'and') {
+    search.search.forEach(searchVal => {
+      hasIdSearch = this.parseFieldResolverSearchArgForCassandra(searchVal, ids, idAttribute, hasIdSearch);
+    }) 
+  } else {
+    if(search && search.field === idAttribute && (search.operator === 'eq' || search.operator === 'in')) {
+      hasIdSearch = true;
+      const valueArr = search.operator === 'eq' ? [search.value] : search.value.split(',');
+      const intersection = Array.isArray(ids) ? _.intersection(valueArr, ids) : _.intersection(valueArr, [ids]);
+      search.operator = 'in';
+      search.value = intersection.length > 0 ? intersection.join(',') : [];
+      search.valueType = intersection.length > 0 ? "Array" : undefined;
+    }
+  }
+  return hasIdSearch;
+}
