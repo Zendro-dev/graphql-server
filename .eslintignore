@@ -1,0 +1,26 @@
+# ignore code-generated contents
+migrations/*
+models/*
+# patches/*
+resolvers/*
+schemas/*
+# validations/*
+
+# un-ignore static migrations
+!migrations/default-sql
+migrations/default-sql/*
+
+# un-ignore static models
+!models/sql
+models/sql/*
+!models/index.js
+
+# un-ignore static models/adapters
+!models/adapters
+models/adapters/*
+!models/adapters/index.js
+
+# un-ignore all role, user, and role_to_user static files
+!**/*role_to_user.js
+!**/*role.js
+!**/*user.js
