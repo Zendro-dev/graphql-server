@@ -20,7 +20,7 @@ module.exports =  function( context, resource, permission ) {
   }
 
   let token_bearer =  context.request.headers["authorization"];
-  const token = token_bearer && typeof token_bearer === "string " ? token_bearer.replace("Bearer ","") : undefined;
+  const token = token_bearer && typeof token_bearer === "string" ? token_bearer.replace("Bearer ","") : undefined;
   console.log("TOKEN",typeof token, token);
   try{
     //Identify user from context
