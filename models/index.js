@@ -28,7 +28,7 @@ for (let storageType of storageTypes) {
       let model = require(join(__dirname, storageType, file));
       
       // used for setting up the storagehandler. generic, zendro-server and distributed types
-      // don'T have storage handlers assigned.
+      // don't have storage handlers assigned.
       if(models[storageType])
         models[storageType][model.name] = model.definition;
   
