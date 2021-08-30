@@ -4,7 +4,7 @@
   "description": "Schema as string",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "nodemon server.js",
     "test": "mocha test/test.js --exit"
   },
   "author": "vsuaste",
@@ -58,8 +58,9 @@
     "xlsx": "^0.16.1"
   },
   "devDependencies": {
-    "mocha": "^7.1.2",
     "axios": "^0.19.2",
-    "form-data": "^3.0.0"
+    "form-data": "^3.0.0",
+    "mocha": "^7.1.2",
+    "nodemon": "^2.0.12"
   }
 }
