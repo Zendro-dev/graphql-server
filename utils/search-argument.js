@@ -142,12 +142,17 @@ module.exports = class search {
       "lt",
       "lte",
       "regexp",
+      "notRegexp",
+      "like",
+      "notLike",
+      "ilike",
+      "notIlike"
     ];
 
     if (allowedOperators.includes(operator)) {
       if (operator === "notIn") {
         return "$nin";
-      } else if (operator === "regexp") {
+      } else if (operator === "regexp" || operator === "like" || operator === "ilike" || operator === "notLike" || operator === "notIlike") {
         return "$regex";
       } else {
         return "$" + operator;
@@ -156,6 +161,60 @@ module.exports = class search {
       throw new Error(`Operator ${operator} not supported in MongoDB`);
     }
   }
+
+  /**
+   * toMongoDb - Convert recursive search instance to search object in MongoDb
+   *
+   */
+   toMongoDb() {
+    let searchsInMongoDb = {};
+    const transformedOperator = this.transformMongoDbOperator(this.operator);
+
+    if (
+      this.operator === undefined ||
+      (this.value === undefined && this.search === undefined)
+    ) {
+      //there's no search-operation arguments
+      return searchsInMongoDb;
+    } else if (this.search === undefined && this.field === undefined) {
+      searchsInMongoDb[transformedOperator] = this.value;
+    } else if (this.search === undefined) {
+      const valueToRegex = `^${this.value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
+      if (this.operator === 'like' || this.operator === 'notLike') {
+        searchsInMongoDb[this.field] = {
+          [transformedOperator]: valueToRegex,
+        }
+      } else if (this.operator === "ilike" || this.operator === "notIlike" ) {
+        searchsInMongoDb[this.field] = {
+          [transformedOperator]: valueToRegex,
+          '$options': 'i' 
+        } 
+      } else {
+        searchsInMongoDb[this.field] = {
+          [transformedOperator]: this.value,
+        };
+      }
+      // add $not if the operator includes "not"
+      if (this.operator.includes("not")) {
+        searchsInMongoDb[this.field] = {'$not': searchsInMongoDb[this.field]}
+      }
+    } else if (this.field === undefined) {
+      searchsInMongoDb[transformedOperator] = this.search.map((sa) => {
+        let new_sa = new search(sa);
+        return new_sa.toMongoDb();
+      });
+    } else {
+      searchsInMongoDb[this.field] = {
+        [transformedOperator]: this.search.map((sa) => {
+          let new_sa = new search(sa);
+          return new_sa.toMongoDb();
+        }),
+      };
+    }
+
+    return searchsInMongoDb;
+  }
+
   /**
    *
    * @param {*} operatorString
@@ -191,107 +250,7 @@ module.exports = class search {
         throw new Error(`Operator ${operatorString} not supported`);
     }
   }
-  /**
-   *
-   * @param {*} operator
-   */
-  transformAmazonS3Operator(operator) {
-    if (operator === undefined) {
-      return;
-    }
-    switch (operator) {
-      case "eq":
-        return " = ";
-      case "ne":
-        return " != ";
-      case "lt":
-        return " < ";
-      case "gt":
-        return " > ";
-      case "lte":
-        return " <= ";
-      case "gte":
-        return " >= ";
-      case "like":
-      case "and":
-      case "or":
-      case "not":
-      case "between":
-      case "in":
-        return ` ${operator.toUpperCase()} `;
-      default:
-        throw new Error(`Operator ${operator} is not supported`);
-    }
-  }
-  /**
-   *
-   * @param {*} operator
-   */
-  transformNeo4jOperator(operator) {
-    if (operator === undefined) {
-      return;
-    }
-    switch (operator) {
-      case "eq":
-        return " = ";
-      case "ne":
-        return " <> ";
-      case "lt":
-        return " < ";
-      case "gt":
-        return " > ";
-      case "lte":
-        return " <= ";
-      case "gte":
-        return " >= ";
-      case "regexp":
-        return " =~ ";
-      case "contains":
-      case "and":
-      case "or":
-      case "not":
-      case "in":
-        return ` ${operator.toUpperCase()} `;
-      default:
-        throw new Error(`Operator ${operator} is not supported`);
-    }
-  }
-  /**
-   * toMongoDb - Convert recursive search instance to search object in MongoDb
-   *
-   */
-  toMongoDb() {
-    let searchsInMongoDb = {};
-    const transformedOperator = this.transformMongoDbOperator(this.operator);
 
-    if (
-      this.operator === undefined ||
-      (this.value === undefined && this.search === undefined)
-    ) {
-      //there's no search-operation arguments
-      return searchsInMongoDb;
-    } else if (this.search === undefined && this.field === undefined) {
-      searchsInMongoDb[transformedOperator] = this.value;
-    } else if (this.search === undefined) {
-      searchsInMongoDb[this.field] = {
-        [transformedOperator]: this.value,
-      };
-    } else if (this.field === undefined) {
-      searchsInMongoDb[transformedOperator] = this.search.map((sa) => {
-        let new_sa = new search(sa);
-        return new_sa.toMongoDb();
-      });
-    } else {
-      searchsInMongoDb[this.field] = {
-        [transformedOperator]: this.search.map((sa) => {
-          let new_sa = new search(sa);
-          return new_sa.toMongoDb();
-        }),
-      };
-    }
-
-    return searchsInMongoDb;
-  }
   /**
    * toCassandra - Convert recursive search instance to search string for use in CQL
    *
@@ -300,7 +259,7 @@ module.exports = class search {
    *
    * @returns{string} Translated search instance into CQL string
    */
-  toCassandra(attributesDefinition, allowFiltering) {
+   toCassandra(attributesDefinition, allowFiltering) {
     let searchsInCassandra = "";
     let type = attributesDefinition[this.field];
     if (
@@ -352,6 +311,44 @@ module.exports = class search {
 
     return searchsInCassandra;
   }
+
+  /**
+   *
+   * @param {*} operator
+   */
+  transformAmazonS3Operator(operator) {
+    if (operator === undefined) {
+      return;
+    }
+    switch (operator) {
+      case "eq":
+        return " = ";
+      case "ne":
+        return " != ";
+      case "lt":
+        return " < ";
+      case "gt":
+        return " > ";
+      case "lte":
+        return " <= ";
+      case "gte":
+        return " >= ";
+      case "regexp": 
+        return "regexp_like";
+      case "ilike": 
+        return "like";
+      case "like":
+      case "and":
+      case "or":
+      case "not":
+      case "between":
+      case "in":
+        return ` ${operator.toUpperCase()} `;
+      default:
+        throw new Error(`Operator ${operator} is not supported`);
+    }
+  }
+
   /**
    * toAmazonS3 - Convert recursive search instance to search string for use in SQL
    *
@@ -359,7 +356,7 @@ module.exports = class search {
    *
    * @returns{string} Translated search instance
    */
-  toAmazonS3(dataModelDefinition, arrayDelimiter, storageType = "AmazonS3") {
+   toAmazonS3(dataModelDefinition, arrayDelimiter, storageType = "AmazonS3") {
     let searchsInAmazonS3 = "";
     let type = dataModelDefinition[this.field];
     const transformedOperator = this.transformAmazonS3Operator(this.operator);
@@ -422,8 +419,13 @@ module.exports = class search {
             value = `'${value}'`;
           }
         }
-
-        searchsInAmazonS3 = this.field + transformedOperator + value;
+        if (this.operator === 'regexp') {
+          searchsInAmazonS3 = `${transformedOperator}(${this.field}, ${value})` 
+        } else if (this.operator === 'ilike') {
+          searchsInAmazonS3 = `LOWER(${this.field}) ${transformedOperator} LOWER(${value})`
+        } else {
+          searchsInAmazonS3 = this.field + transformedOperator + value;
+        }
       }
     } else if (logicOperaters.includes(this.operator)) {
       if (this.operator === "not") {
@@ -456,6 +458,46 @@ module.exports = class search {
 
     return searchsInAmazonS3;
   }
+
+  /**
+   *
+   * @param {*} operator
+   */
+  transformNeo4jOperator(operator) {
+    if (operator === undefined) {
+      return;
+    }
+    switch (operator) {
+      case "eq":
+        return " = ";
+      case "ne":
+        return " <> ";
+      case "lt":
+        return " < ";
+      case "gt":
+        return " > ";
+      case "lte":
+        return " <= ";
+      case "gte":
+        return " >= ";
+      case "like":
+      case "notLike":  
+      case "ilike":
+      case "notIlike":
+      case "regexp":
+      case "notRegexp":
+        return " =~ ";
+      case "contains":
+      case "and":
+      case "or":
+      case "not":
+      case "in":
+        return ` ${operator.toUpperCase()} `;
+      default:
+        throw new Error(`Operator ${operator} is not supported`);
+    }
+  }
+  
   /**
    * toNeo4j - Convert recursive search instance to search string for use in Cypher
    *
@@ -501,9 +543,16 @@ module.exports = class search {
           ? "ALL(x IN " + value + " WHERE x IN n." + this.field + ")"
           : value + " IN n." + this.field;
       } else {
+        // add a NOT if operator is notLike, notIlike
+        const negator = this.operator.includes("not") ? "NOT" : "";
         // eq: array data = array value
         // in: primitive data in array value
-        searchsInNeo4j = "n." + this.field + transformedOperator + value;
+        if (this.operator === 'like') {
+          value = `^${value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
+        } else if (this.operator === 'ilike') {
+          value =`(?i)^${value.replace(/_/g,'.').replace(/%/g,'.*?')}$`; 
+        }
+        searchsInNeo4j = negator + "n." + this.field + transformedOperator + value;
       }
     } else if (logicOperaters.includes(this.operator)) {
       if (this.operator === "not") {
