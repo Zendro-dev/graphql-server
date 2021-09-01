@@ -146,13 +146,19 @@ module.exports = class search {
       "like",
       "notLike",
       "ilike",
-      "notIlike"
+      "notIlike",
     ];
 
     if (allowedOperators.includes(operator)) {
       if (operator === "notIn") {
         return "$nin";
-      } else if (operator === "regexp" || operator === "like" || operator === "ilike" || operator === "notLike" || operator === "notIlike") {
+      } else if (
+        operator === "regexp" ||
+        operator === "like" ||
+        operator === "ilike" ||
+        operator === "notLike" ||
+        operator === "notIlike"
+      ) {
         return "$regex";
       } else {
         return "$" + operator;
@@ -166,7 +172,7 @@ module.exports = class search {
    * toMongoDb - Convert recursive search instance to search object in MongoDb
    *
    */
-   toMongoDb() {
+  toMongoDb() {
     let searchsInMongoDb = {};
     const transformedOperator = this.transformMongoDbOperator(this.operator);
 
@@ -179,30 +185,38 @@ module.exports = class search {
     } else if (this.search === undefined && this.field === undefined) {
       searchsInMongoDb[transformedOperator] = this.value;
     } else if (this.search === undefined) {
-      const valueToRegex = `^${this.value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
-      if (this.operator === 'like' || this.operator === 'notLike') {
+      const valueToRegex = `^${this.value
+        .replace(/_/g, ".")
+        .replace(/%/g, ".*?")}$`;
+      if (this.operator === "like" || this.operator === "notLike") {
         searchsInMongoDb[this.field] = {
           [transformedOperator]: valueToRegex,
-        }
-      } else if (this.operator === "ilike" || this.operator === "notIlike" ) {
+        };
+      } else if (this.operator === "ilike" || this.operator === "notIlike") {
         searchsInMongoDb[this.field] = {
           [transformedOperator]: valueToRegex,
-          '$options': 'i' 
-        } 
+          $options: "i",
+        };
       } else {
         searchsInMongoDb[this.field] = {
           [transformedOperator]: this.value,
         };
       }
-      // add $not if the operator includes "not"
-      if (this.operator.includes("not")) {
-        searchsInMongoDb[this.field] = {'$not': searchsInMongoDb[this.field]}
-      }
     } else if (this.field === undefined) {
-      searchsInMongoDb[transformedOperator] = this.search.map((sa) => {
-        let new_sa = new search(sa);
-        return new_sa.toMongoDb();
-      });
+      if (this.operator === "not") {
+        let new_search = new search(this.search[0]);
+        searchsInMongoDb[new_search.field] = {
+          [transformedOperator]: {
+            [this.transformMongoDbOperator(new_search.operator)]:
+              new_search.value,
+          },
+        };
+      } else {
+        searchsInMongoDb[transformedOperator] = this.search.map((sa) => {
+          let new_sa = new search(sa);
+          return new_sa.toMongoDb();
+        });
+      }
     } else {
       searchsInMongoDb[this.field] = {
         [transformedOperator]: this.search.map((sa) => {
@@ -259,7 +273,7 @@ module.exports = class search {
    *
    * @returns{string} Translated search instance into CQL string
    */
-   toCassandra(attributesDefinition, allowFiltering) {
+  toCassandra(attributesDefinition, allowFiltering) {
     let searchsInCassandra = "";
     let type = attributesDefinition[this.field];
     if (
@@ -333,9 +347,9 @@ module.exports = class search {
         return " <= ";
       case "gte":
         return " >= ";
-      case "regexp": 
+      case "regexp":
         return "regexp_like";
-      case "ilike": 
+      case "ilike":
         return "like";
       case "like":
       case "and":
@@ -356,7 +370,7 @@ module.exports = class search {
    *
    * @returns{string} Translated search instance
    */
-   toAmazonS3(dataModelDefinition, arrayDelimiter, storageType = "AmazonS3") {
+  toAmazonS3(dataModelDefinition, arrayDelimiter, storageType = "AmazonS3") {
     let searchsInAmazonS3 = "";
     let type = dataModelDefinition[this.field];
     const transformedOperator = this.transformAmazonS3Operator(this.operator);
@@ -419,10 +433,10 @@ module.exports = class search {
             value = `'${value}'`;
           }
         }
-        if (this.operator === 'regexp') {
-          searchsInAmazonS3 = `${transformedOperator}(${this.field}, ${value})` 
-        } else if (this.operator === 'ilike') {
-          searchsInAmazonS3 = `LOWER(${this.field}) ${transformedOperator} LOWER(${value})`
+        if (this.operator === "regexp") {
+          searchsInAmazonS3 = `${transformedOperator}(${this.field}, ${value})`;
+        } else if (this.operator === "ilike") {
+          searchsInAmazonS3 = `LOWER(${this.field}) ${transformedOperator} LOWER(${value})`;
         } else {
           searchsInAmazonS3 = this.field + transformedOperator + value;
         }
@@ -481,7 +495,7 @@ module.exports = class search {
       case "gte":
         return " >= ";
       case "like":
-      case "notLike":  
+      case "notLike":
       case "ilike":
       case "notIlike":
       case "regexp":
@@ -497,7 +511,7 @@ module.exports = class search {
         throw new Error(`Operator ${operator} is not supported`);
     }
   }
-  
+
   /**
    * toNeo4j - Convert recursive search instance to search string for use in Cypher
    *
@@ -547,18 +561,22 @@ module.exports = class search {
         const negator = this.operator.includes("not") ? "NOT" : "";
         // eq: array data = array value
         // in: primitive data in array value
-        if (this.operator === 'like') {
-          value = `^${value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
-        } else if (this.operator === 'ilike') {
-          value =`(?i)^${value.replace(/_/g,'.').replace(/%/g,'.*?')}$`; 
+        if (this.operator === "like") {
+          value = `^${value.replace(/_/g, ".").replace(/%/g, ".*?")}$`;
+        } else if (this.operator === "ilike") {
+          value = `(?i)^${value.replace(/_/g, ".").replace(/%/g, ".*?")}$`;
         }
-        searchsInNeo4j = negator + "n." + this.field + transformedOperator + value;
+        searchsInNeo4j =
+          negator + "n." + this.field + transformedOperator + value;
       }
     } else if (logicOperaters.includes(this.operator)) {
       if (this.operator === "not") {
         let new_search = new search(this.search[0]);
         searchsInNeo4j =
-          transformedOperator + "(" + new_search.toNeo4j(dataModelDefinition);
+          transformedOperator +
+          "(" +
+          new_search.toNeo4j(dataModelDefinition) +
+          ")";
       } else {
         searchsInNeo4j = this.search
           .map((singleSearch) =>
