@@ -347,6 +347,8 @@ module.exports = class search {
         return " <= ";
       case "gte":
         return " >= ";
+      case "notBetween":
+        return " NOT BETWEEN ";
       case "regexp":
         return "regexp_like";
       case "ilike":
@@ -385,60 +387,88 @@ module.exports = class search {
       searchsInAmazonS3 = transformedOperator + this.value;
     } else if (this.search === undefined) {
       let arrayType = type != undefined && type.replace(/\s+/g, "")[0] === "[";
-      const pattern =
-        storageType === "AmazonS3"
-          ? [
-              `'${this.value}${arrayDelimiter}%'`,
-              `'%${arrayDelimiter}${this.value}${arrayDelimiter}%'`,
-              `'%${arrayDelimiter}${this.value}'`,
-            ]
-          : stringType.includes(type.replace(/\s+/g, "").slice(1, -1))
-          ? [
-              `'["${this.value}",%'`,
-              `'%,"${this.value}",%'`,
-              `'%,"${this.value}"]'`,
-            ]
-          : [`'[${this.value},%'`, `'%,${this.value},%'`, `'%,${this.value}]'`];
       let value = this.value;
-      if (arrayType && this.operator === "in") {
-        value = `'${this.value}'`;
-        searchsInAmazonS3 += pattern
-          .map((item) => {
-            return ` ${this.field} LIKE ${item} `;
-          })
-          .join(" OR ");
-        searchsInAmazonS3 += ` OR ${this.field} = ${value} `;
-      } else {
-        if (Array.isArray(value)) {
-          if (
-            stringType.includes(type) ||
-            stringType.includes(type.replace(/\s+/g, "").slice(1, -1))
-          ) {
-            value =
-              this.operator === "in"
-                ? `(${value.map((e) => `'${e}'`)})`
-                : storageType === "AmazonS3"
-                ? `'${value.join(arrayDelimiter)}'`
-                : `'[${value.map((e) => `"${e}"`)}]'`;
-          } else {
-            value =
-              this.operator === "in"
-                ? `(${value.map((e) => `${e}`)})`
-                : storageType === "AmazonS3"
-                ? `'${value.join(arrayDelimiter)}'`
-                : `'[${value.map((e) => `${e}`)}]'`;
+      if (["between", "notBetween"].includes(this.operator)) {
+        if (Array.isArray(value) && value.length === 2 && !arrayType) {
+          if (stringType.includes(type)) {
+            value = value.map((e) => `'${e}'`);
           }
+          searchsInAmazonS3 =
+            this.field + transformedOperator + value[0] + " AND " + value[1];
+          console.log(searchsInAmazonS3);
         } else {
-          if (stringType.includes(type) || arrayType) {
-            value = `'${value}'`;
+          if (arrayType) {
+            throw new Error(
+              "between/notBetween operators could not be used for array field:\n" +
+                JSON.stringify(this, null, 2)
+            );
+          } else {
+            throw new Error(
+              'Please pass range in the value field for between/notBetween operators as array, e.g. valueType: Array, value: "1,2":\n' +
+                JSON.stringify(this, null, 2)
+            );
           }
         }
-        if (this.operator === "regexp") {
-          searchsInAmazonS3 = `${transformedOperator}(${this.field}, ${value})`;
-        } else if (this.operator === "ilike") {
-          searchsInAmazonS3 = `LOWER(${this.field}) ${transformedOperator} LOWER(${value})`;
+      } else {
+        const pattern =
+          storageType === "AmazonS3"
+            ? [
+                `'${this.value}${arrayDelimiter}%'`,
+                `'%${arrayDelimiter}${this.value}${arrayDelimiter}%'`,
+                `'%${arrayDelimiter}${this.value}'`,
+              ]
+            : stringType.includes(type.replace(/\s+/g, "").slice(1, -1))
+            ? [
+                `'["${this.value}",%'`,
+                `'%,"${this.value}",%'`,
+                `'%,"${this.value}"]'`,
+              ]
+            : [
+                `'[${this.value},%'`,
+                `'%,${this.value},%'`,
+                `'%,${this.value}]'`,
+              ];
+
+        if (arrayType && this.operator === "in") {
+          value = `'${this.value}'`;
+          searchsInAmazonS3 += pattern
+            .map((item) => {
+              return ` ${this.field} LIKE ${item} `;
+            })
+            .join(" OR ");
+          searchsInAmazonS3 += ` OR ${this.field} = ${value} `;
         } else {
-          searchsInAmazonS3 = this.field + transformedOperator + value;
+          if (Array.isArray(value)) {
+            if (
+              stringType.includes(type) ||
+              stringType.includes(type.replace(/\s+/g, "").slice(1, -1))
+            ) {
+              value =
+                this.operator === "in"
+                  ? `(${value.map((e) => `'${e}'`)})`
+                  : storageType === "AmazonS3"
+                  ? `'${value.join(arrayDelimiter)}'`
+                  : `'[${value.map((e) => `"${e}"`)}]'`;
+            } else {
+              value =
+                this.operator === "in"
+                  ? `(${value.map((e) => `${e}`)})`
+                  : storageType === "AmazonS3"
+                  ? `'${value.join(arrayDelimiter)}'`
+                  : `'[${value.map((e) => `${e}`)}]'`;
+            }
+          } else {
+            if (stringType.includes(type) || arrayType) {
+              value = `'${value}'`;
+            }
+          }
+          if (this.operator === "regexp") {
+            searchsInAmazonS3 = `${transformedOperator}(${this.field}, ${value})`;
+          } else if (this.operator === "ilike") {
+            searchsInAmazonS3 = `LOWER(${this.field}) ${transformedOperator} LOWER(${value})`;
+          } else {
+            searchsInAmazonS3 = this.field + transformedOperator + value;
+          }
         }
       }
     } else if (logicOperaters.includes(this.operator)) {
