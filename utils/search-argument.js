@@ -58,7 +58,7 @@ module.exports = class search {
       let arrayType =
         dataModelDefinition[this.field] != undefined &&
         dataModelDefinition[this.field].replace(/\s+/g, "")[0] === "[";
-      if (arrayType && this.operator === "in") {
+      if (arrayType && this.operator === "contains") {
         let pattern = null;
         if (
           strType.includes(
@@ -78,7 +78,7 @@ module.exports = class search {
         searchsInSequelize[this.field] = {
           [Op.or]: pattern,
         };
-      } else if (arrayType && this.operator === "notIn") {
+      } else if (arrayType && this.operator === "notContains") {
         let pattern = null;
         if (
           strType.includes(
@@ -137,6 +137,8 @@ module.exports = class search {
       "ne",
       "in",
       "notIn",
+      "contains",
+      "notContains",
       "gt",
       "gte",
       "lt",
@@ -145,15 +147,19 @@ module.exports = class search {
       "notRegexp",
       "like",
       "notLike",
-      "ilike",
-      "notIlike"
+      "iLike",
+      "notILike"
     ];
 
     if (allowedOperators.includes(operator)) {
       if (operator === "notIn") {
         return "$nin";
-      } else if (operator === "regexp" || operator === "like" || operator === "ilike" || operator === "notLike" || operator === "notIlike") {
+      } else if (operator === "regexp" || operator === "like" || operator === "iLike" || operator === "notLike" || operator === "notILike") {
         return "$regex";
+      } else if (operator === "contains") {
+        return "$eq";
+      } else if (operator === "notContains") {
+        return "$ne";
       } else {
         return "$" + operator;
       }
@@ -179,12 +185,13 @@ module.exports = class search {
     } else if (this.search === undefined && this.field === undefined) {
       searchsInMongoDb[transformedOperator] = this.value;
     } else if (this.search === undefined) {
-      const valueToRegex = `^${this.value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
       if (this.operator === 'like' || this.operator === 'notLike') {
+        const valueToRegex = `^${this.value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
         searchsInMongoDb[this.field] = {
           [transformedOperator]: valueToRegex,
         }
-      } else if (this.operator === "ilike" || this.operator === "notIlike" ) {
+      } else if (this.operator === "iLike" || this.operator === "notILike" ) {
+        const valueToRegex = `^${this.value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
         searchsInMongoDb[this.field] = {
           [transformedOperator]: valueToRegex,
           '$options': 'i' 
@@ -335,7 +342,7 @@ module.exports = class search {
         return " >= ";
       case "regexp": 
         return "regexp_like";
-      case "ilike": 
+      case "iLike": 
         return "like";
       case "like":
       case "and":
@@ -386,7 +393,7 @@ module.exports = class search {
             ]
           : [`'[${this.value},%'`, `'%,${this.value},%'`, `'%,${this.value}]'`];
       let value = this.value;
-      if (arrayType && this.operator === "in") {
+      if (arrayType && this.operator === "contains") {
         value = `'${this.value}'`;
         searchsInAmazonS3 += pattern
           .map((item) => {
@@ -394,6 +401,14 @@ module.exports = class search {
           })
           .join(" OR ");
         searchsInAmazonS3 += ` OR ${this.field} = ${value} `;
+      } else if (arrayType && this.operator === "notContains") {
+          value = `'${this.value}'`;
+          searchsInAmazonS3 += pattern
+            .map((item) => {
+              return ` ${this.field} NOT LIKE ${item} `;
+            })
+            .join(" OR ");
+          searchsInAmazonS3 += ` OR ${this.field} = ${value} `;
       } else {
         if (Array.isArray(value)) {
           if (
@@ -401,14 +416,14 @@ module.exports = class search {
             stringType.includes(type.replace(/\s+/g, "").slice(1, -1))
           ) {
             value =
-              this.operator === "in"
+              this.operator === "in" || this.operator === "notIn"
                 ? `(${value.map((e) => `'${e}'`)})`
                 : storageType === "AmazonS3"
                 ? `'${value.join(arrayDelimiter)}'`
                 : `'[${value.map((e) => `"${e}"`)}]'`;
           } else {
             value =
-              this.operator === "in"
+              this.operator === "in" || this.operator === "notIn"
                 ? `(${value.map((e) => `${e}`)})`
                 : storageType === "AmazonS3"
                 ? `'${value.join(arrayDelimiter)}'`
@@ -421,8 +436,14 @@ module.exports = class search {
         }
         if (this.operator === 'regexp') {
           searchsInAmazonS3 = `${transformedOperator}(${this.field}, ${value})` 
-        } else if (this.operator === 'ilike') {
+        } else if (this.operator === 'notRegexp') {
+          searchsInAmazonS3 = `NOT ${transformedOperator}(${this.field}, ${value})`
+        } else if (this.operator === 'iLike') {
           searchsInAmazonS3 = `LOWER(${this.field}) ${transformedOperator} LOWER(${value})`
+        } else if (this.operator === 'notILike') {
+          searchsInAmazonS3 = `NOT LOWER(${this.field}) ${transformedOperator} LOWER(${value})`
+        } else if (this.operator === 'notLike' || this.operator === 'notIn') {
+          searchsInAmazonS3 = "NOT " + this.field + transformedOperator + value; 
         } else {
           searchsInAmazonS3 = this.field + transformedOperator + value;
         }
@@ -482,12 +503,14 @@ module.exports = class search {
         return " >= ";
       case "like":
       case "notLike":  
-      case "ilike":
-      case "notIlike":
+      case "iLike":
+      case "notILike":
       case "regexp":
       case "notRegexp":
         return " =~ ";
       case "contains":
+      case "notContains":
+        return " IN "
       case "and":
       case "or":
       case "not":
@@ -538,18 +561,27 @@ module.exports = class search {
           value = `'${value}'`;
         }
       }
-      if (arrayType && this.operator === "in") {
+      if (arrayType && this.operator === "contains") {
+        console.log(this.value)
         searchsInNeo4j = Array.isArray(this.value)
           ? "ALL(x IN " + value + " WHERE x IN n." + this.field + ")"
           : value + " IN n." + this.field;
+      } else if (this.operator === "notContains") {
+        searchsInNeo4j = Array.isArray(this.value)
+        ? "NOT ALL(x IN " + value + " WHERE x IN n." + this.field + ")"
+        : "NOT " + value + " IN n." + this.field;
+      } else if (this.operator === "in") {
+        searchsInNeo4j = value + " IN n." + this.field;
+      } else if(this.operator === "notIn") {
+        searchsInNeo4j = "NOT " + value + " IN n." + this.field; 
       } else {
-        // add a NOT if operator is notLike, notIlike
+        // add a NOT if operator is notLike, notILike, notRegexp
         const negator = this.operator.includes("not") ? "NOT" : "";
         // eq: array data = array value
         // in: primitive data in array value
-        if (this.operator === 'like') {
+        if (this.operator === 'like' || this.operator === 'notLike') {
           value = `^${value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
-        } else if (this.operator === 'ilike') {
+        } else if (this.operator === 'iLike' || this.operator === 'notILike') {
           value =`(?i)^${value.replace(/_/g,'.').replace(/%/g,'.*?')}$`; 
         }
         searchsInNeo4j = negator + "n." + this.field + transformedOperator + value;
