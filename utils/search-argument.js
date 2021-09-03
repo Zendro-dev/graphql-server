@@ -154,7 +154,7 @@ module.exports = class search {
     if (allowedOperators.includes(operator)) {
       if (operator === "notIn") {
         return "$nin";
-      } else if (operator === "regexp" || operator === "like" || operator === "iLike" || operator === "notLike" || operator === "notILike") {
+      } else if (operator === "regexp" || operator === "notRegexp" || operator === "like" || operator === "iLike" || operator === "notLike" || operator === "notILike") {
         return "$regex";
       } else if (operator === "contains") {
         return "$eq";
@@ -510,6 +510,7 @@ module.exports = class search {
         return " =~ ";
       case "contains":
       case "notContains":
+      case "notIn":
         return " IN "
       case "and":
       case "or":
@@ -544,6 +545,11 @@ module.exports = class search {
     } else if (this.search === undefined) {
       let arrayType = type != undefined && type.replace(/\s+/g, "")[0] === "[";
       let value = this.value;
+      if (this.operator === 'like' || this.operator === 'notLike') {
+        value = `^${value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
+      } else if (this.operator === 'iLike' || this.operator === 'notILike') {
+        value =`(?i)^${value.replace(/_/g,'.').replace(/%/g,'.*?')}$`; 
+      }
       if (Array.isArray(value)) {
         if (
           stringType.includes(type) ||
@@ -562,7 +568,6 @@ module.exports = class search {
         }
       }
       if (arrayType && this.operator === "contains") {
-        console.log(this.value)
         searchsInNeo4j = Array.isArray(this.value)
           ? "ALL(x IN " + value + " WHERE x IN n." + this.field + ")"
           : value + " IN n." + this.field;
@@ -570,20 +575,12 @@ module.exports = class search {
         searchsInNeo4j = Array.isArray(this.value)
         ? "NOT ALL(x IN " + value + " WHERE x IN n." + this.field + ")"
         : "NOT " + value + " IN n." + this.field;
-      } else if (this.operator === "in") {
-        searchsInNeo4j = value + " IN n." + this.field;
-      } else if(this.operator === "notIn") {
-        searchsInNeo4j = "NOT " + value + " IN n." + this.field; 
       } else {
         // add a NOT if operator is notLike, notILike, notRegexp
-        const negator = this.operator.includes("not") ? "NOT" : "";
+        const negator = this.operator.startsWith("not") ? "NOT " : "";
         // eq: array data = array value
         // in: primitive data in array value
-        if (this.operator === 'like' || this.operator === 'notLike') {
-          value = `^${value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
-        } else if (this.operator === 'iLike' || this.operator === 'notILike') {
-          value =`(?i)^${value.replace(/_/g,'.').replace(/%/g,'.*?')}$`; 
-        }
+        
         searchsInNeo4j = negator + "n." + this.field + transformedOperator + value;
       }
     } else if (logicOperaters.includes(this.operator)) {
