@@ -185,14 +185,17 @@ module.exports = class search {
     } else if (this.search === undefined && this.field === undefined) {
       searchsInMongoDb[transformedOperator] = this.value;
     } else if (this.search === undefined) {
-      const valueToRegex = `^${this.value
-        .replace(/_/g, ".")
-        .replace(/%/g, ".*?")}$`;
       if (this.operator === "like" || this.operator === "notLike") {
+        const valueToRegex = `^${this.value
+          .replace(/_/g, ".")
+          .replace(/%/g, ".*?")}$`;
         searchsInMongoDb[this.field] = {
           [transformedOperator]: valueToRegex,
         };
-      } else if (this.operator === "ilike" || this.operator === "notIlike") {
+      } else if (this.operator === "iLike" || this.operator === "notILike") {
+        const valueToRegex = `^${this.value
+          .replace(/_/g, ".")
+          .replace(/%/g, ".*?")}$`;
         searchsInMongoDb[this.field] = {
           [transformedOperator]: valueToRegex,
           $options: "i",
