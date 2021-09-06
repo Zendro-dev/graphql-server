@@ -65,7 +65,7 @@ type UserEdge{
     field: userField
     value: String
     valueType: InputType
-    operator: SqlOperator
+    operator: GenericPrestoSqlOperator
     search: [searchUserInput]
   }
 

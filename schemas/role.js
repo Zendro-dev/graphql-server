@@ -65,7 +65,7 @@ type RoleEdge{
     field: roleField
     value: String
     valueType: InputType
-    operator: SqlOperator
+    operator: GenericPrestoSqlOperator
     search: [searchRoleInput]
   }
 
