@@ -350,8 +350,11 @@ module.exports = class search {
         return " NOT BETWEEN ";
       case "regexp":
         return "regexp_like";
-      case "iLike": 
-        return "like";
+      case "iLike":
+      // contains and notContains are implemented via an OR connection of multiple LIKE searches.
+      case "contains":
+      case "notContains": 
+        return "LIKE";
       case "like":
       case "and":
       case "or":
@@ -359,6 +362,8 @@ module.exports = class search {
       case "between":
       case "in":
         return ` ${operator.toUpperCase()} `;
+      
+        break;
       default:
         throw new Error(`Operator ${operator} is not supported`);
     }
