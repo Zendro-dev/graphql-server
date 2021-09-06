@@ -172,7 +172,7 @@ module.exports = class search {
    * toMongoDb - Convert recursive search instance to search object in MongoDb
    *
    */
-   toMongoDb() {
+  toMongoDb() {
     let searchsInMongoDb = {};
     const transformedOperator = this.transformMongoDbOperator(this.operator);
 
@@ -194,22 +194,28 @@ module.exports = class search {
         const valueToRegex = `^${this.value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
         searchsInMongoDb[this.field] = {
           [transformedOperator]: valueToRegex,
-          '$options': 'i' 
-        } 
+          $options: "i",
+        };
       } else {
         searchsInMongoDb[this.field] = {
           [transformedOperator]: this.value,
         };
       }
-      // add $not if the operator includes "not"
-      if (this.operator.includes("not")) {
-        searchsInMongoDb[this.field] = {'$not': searchsInMongoDb[this.field]}
-      }
     } else if (this.field === undefined) {
-      searchsInMongoDb[transformedOperator] = this.search.map((sa) => {
-        let new_sa = new search(sa);
-        return new_sa.toMongoDb();
-      });
+      if (this.operator === "not") {
+        let new_search = new search(this.search[0]);
+        searchsInMongoDb[new_search.field] = {
+          [transformedOperator]: {
+            [this.transformMongoDbOperator(new_search.operator)]:
+              new_search.value,
+          },
+        };
+      } else {
+        searchsInMongoDb[transformedOperator] = this.search.map((sa) => {
+          let new_sa = new search(sa);
+          return new_sa.toMongoDb();
+        });
+      }
     } else {
       searchsInMongoDb[this.field] = {
         [transformedOperator]: this.search.map((sa) => {
@@ -266,7 +272,7 @@ module.exports = class search {
    *
    * @returns{string} Translated search instance into CQL string
    */
-   toCassandra(attributesDefinition, allowFiltering) {
+  toCassandra(attributesDefinition, allowFiltering) {
     let searchsInCassandra = "";
     let type = attributesDefinition[this.field];
     if (
@@ -340,7 +346,9 @@ module.exports = class search {
         return " <= ";
       case "gte":
         return " >= ";
-      case "regexp": 
+      case "notBetween":
+        return " NOT BETWEEN ";
+      case "regexp":
         return "regexp_like";
       case "iLike": 
         return "like";
@@ -363,7 +371,7 @@ module.exports = class search {
    *
    * @returns{string} Translated search instance
    */
-   toAmazonS3(dataModelDefinition, arrayDelimiter, storageType = "AmazonS3") {
+  toAmazonS3(dataModelDefinition, arrayDelimiter, storageType = "AmazonS3") {
     let searchsInAmazonS3 = "";
     let type = dataModelDefinition[this.field];
     const transformedOperator = this.transformAmazonS3Operator(this.operator);
@@ -378,21 +386,49 @@ module.exports = class search {
       searchsInAmazonS3 = transformedOperator + this.value;
     } else if (this.search === undefined) {
       let arrayType = type != undefined && type.replace(/\s+/g, "")[0] === "[";
-      const pattern =
-        storageType === "AmazonS3"
-          ? [
-              `'${this.value}${arrayDelimiter}%'`,
-              `'%${arrayDelimiter}${this.value}${arrayDelimiter}%'`,
-              `'%${arrayDelimiter}${this.value}'`,
-            ]
-          : stringType.includes(type.replace(/\s+/g, "").slice(1, -1))
-          ? [
-              `'["${this.value}",%'`,
-              `'%,"${this.value}",%'`,
-              `'%,"${this.value}"]'`,
-            ]
-          : [`'[${this.value},%'`, `'%,${this.value},%'`, `'%,${this.value}]'`];
       let value = this.value;
+
+      const pattern =
+      storageType === "AmazonS3"
+        ? [
+            `'${this.value}${arrayDelimiter}%'`,
+            `'%${arrayDelimiter}${this.value}${arrayDelimiter}%'`,
+            `'%${arrayDelimiter}${this.value}'`,
+          ]
+        : stringType.includes(type.replace(/\s+/g, "").slice(1, -1))
+        ? [
+            `'["${this.value}",%'`,
+            `'%,"${this.value}",%'`,
+            `'%,"${this.value}"]'`,
+          ]
+        : [
+            `'[${this.value},%'`,
+            `'%,${this.value},%'`,
+            `'%,${this.value}]'`,
+          ];
+
+      if (["between", "notBetween"].includes(this.operator)) {
+        if (Array.isArray(value) && value.length === 2 && !arrayType) {
+          if (stringType.includes(type)) {
+            value = value.map((e) => `'${e}'`);
+          }
+          searchsInAmazonS3 =
+            this.field + transformedOperator + value[0] + " AND " + value[1];
+        } else {
+          if (arrayType) {
+            throw new Error(
+              "between/notBetween operators could not be used for array field:\n" +
+                JSON.stringify(this, null, 2)
+            );
+          } else {
+            throw new Error(
+              'Please pass range in the value field for between/notBetween operators as array, e.g. valueType: Array, value: "1,2":\n' +
+                JSON.stringify(this, null, 2)
+            );
+          }
+        }
+      }
+
       if (arrayType && this.operator === "contains") {
         value = `'${this.value}'`;
         searchsInAmazonS3 += pattern
@@ -480,6 +516,7 @@ module.exports = class search {
     return searchsInAmazonS3;
   }
 
+
   /**
    *
    * @param {*} operator
@@ -521,7 +558,7 @@ module.exports = class search {
         throw new Error(`Operator ${operator} is not supported`);
     }
   }
-  
+
   /**
    * toNeo4j - Convert recursive search instance to search string for use in Cypher
    *
@@ -580,14 +617,16 @@ module.exports = class search {
         const negator = this.operator.startsWith("not") ? "NOT " : "";
         // eq: array data = array value
         // in: primitive data in array value
-        
         searchsInNeo4j = negator + "n." + this.field + transformedOperator + value;
       }
     } else if (logicOperaters.includes(this.operator)) {
       if (this.operator === "not") {
         let new_search = new search(this.search[0]);
         searchsInNeo4j =
-          transformedOperator + "(" + new_search.toNeo4j(dataModelDefinition);
+          transformedOperator +
+          "(" +
+          new_search.toNeo4j(dataModelDefinition) +
+          ")";
       } else {
         searchsInNeo4j = this.search
           .map((singleSearch) =>
