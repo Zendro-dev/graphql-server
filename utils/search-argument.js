@@ -196,34 +196,34 @@ module.exports = class search {
     } else if (this.search === undefined && this.field === undefined) {
       searchsInMongoDb[transformedOperator] = this.value;
     } else if (this.search === undefined) {
-      const transformedValue = this.operator.match(/like/i) ? `^${this.value
-        .replace(/_/g, ".")
-        .replace(/%/g, ".*?")}$` : this.value;
+      const transformedValue = this.operator.match(/like/i)
+        ? `^${this.value.replace(/_/g, ".").replace(/%/g, ".*?")}$`
+        : this.value;
 
       switch (this.operator) {
         case "iLike":
         case "iRegexp":
           searchsInMongoDb[this.field] = {
             [transformedOperator]: transformedValue,
-            "$options": "i" 
+            $options: "i",
           };
           break;
         case "notILike":
         case "notIRegexp":
           searchsInMongoDb[this.field] = {
-            "$not": {
+            $not: {
               [transformedOperator]: transformedValue,
-              "$options": "i" 
-            }
-          } 
+              $options: "i",
+            },
+          };
           break;
         case "notLike":
         case "notRegexp":
           searchsInMongoDb[this.field] = {
-            "$not": {
+            $not: {
               [transformedOperator]: transformedValue,
-            }
-          }
+            },
+          };
           break;
         default:
           searchsInMongoDb[this.field] = {
@@ -231,7 +231,6 @@ module.exports = class search {
           };
           break;
       }
-
     } else if (this.field === undefined) {
       if (this.operator === "not") {
         let new_search = new search(this.search[0]);
@@ -394,7 +393,7 @@ module.exports = class search {
       case "notILike":
         return " LIKE ";
       case "notIn":
-        return " IN "
+        return " IN ";
       case "and":
       case "or":
       case "not":
@@ -504,12 +503,17 @@ module.exports = class search {
           }
         } else {
           if (stringType.includes(type) || arrayType) {
-            value = `'${value}'`;
+            value = this.operator.match(/iRegex/i)
+              ? `'(?i)${value}'`
+              : `'${value}'`;
           }
         }
-        if (this.operator === "regexp") {
+        if (this.operator === "regexp" || this.operator === "iRegexp") {
           searchsInAmazonS3 = `${transformedOperator}(${this.field}, ${value})`;
-        } else if (this.operator === "notRegexp") {
+        } else if (
+          this.operator === "notRegexp" ||
+          this.operator === "notIRegexp"
+        ) {
           searchsInAmazonS3 = `NOT ${transformedOperator}(${this.field}, ${value})`;
         } else if (this.operator === "iLike") {
           searchsInAmazonS3 = `LOWER(${this.field}) ${transformedOperator} LOWER(${value})`;
@@ -517,10 +521,6 @@ module.exports = class search {
           searchsInAmazonS3 = `NOT LOWER(${this.field}) ${transformedOperator} LOWER(${value})`;
         } else if (this.operator === "notLike" || this.operator === "notIn") {
           searchsInAmazonS3 = "NOT " + this.field + transformedOperator + value;
-        } else if (this.operator === "iRegexp") {
-          searchsInAmazonS3 = `${transformedOperator}(${this.field}, (?i)${value})`; 
-        } else if (this.operator === "notIRegexp") {
-          searchsInAmazonS3 = `NOT ${transformedOperator}(${this.field}, (?i)${value})`;
         } else {
           searchsInAmazonS3 = this.field + transformedOperator + value;
         }
@@ -556,7 +556,6 @@ module.exports = class search {
 
     return searchsInAmazonS3;
   }
-
   /**
    *
    * @param {*} operator
@@ -629,7 +628,6 @@ module.exports = class search {
       } else if (this.operator === "iLike" || this.operator === "notILike") {
         value = `(?i)^${value.replace(/_/g, ".").replace(/%/g, ".*?")}$`;
       } else if (this.operator.match(/regexp/i) && typeof value === "string") {
-        
         // neo4j cypher uses java regular expressions syntax using the Java "matches" function
         // Therefore it has to match the entire string, which is in contrast to the other storagetypes
         // in zendro.
@@ -637,18 +635,17 @@ module.exports = class search {
         // the value doesn't explicitly specify matching the whole string by using "^" and/or "$".
         const dotAllRegexp = "(?s).*(?-s)";
         if (value[0] !== "^" && value != "") {
-          value = `${dotAllRegexp}${value}`
+          value = `${dotAllRegexp}${value}`;
         }
 
-        if (value[value.length -1] !== "$" && value != "") {
-          value = `${value}${dotAllRegexp}`
+        if (value[value.length - 1] !== "$" && value != "") {
+          value = `${value}${dotAllRegexp}`;
         }
 
-        if (this.operator === "iRegexp" || this.operator === "notIRegexp"){
+        if (this.operator === "iRegexp" || this.operator === "notIRegexp") {
           value = `(?i)${value}`;
         }
-
-      } 
+      }
       if (Array.isArray(value)) {
         if (
           stringType.includes(type) ||
