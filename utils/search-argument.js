@@ -148,13 +148,20 @@ module.exports = class search {
       "like",
       "notLike",
       "iLike",
-      "notILike"
+      "notILike",
     ];
 
     if (allowedOperators.includes(operator)) {
       if (operator === "notIn") {
         return "$nin";
-      } else if (operator === "regexp" || operator === "notRegexp" || operator === "like" || operator === "iLike" || operator === "notLike" || operator === "notILike") {
+      } else if (
+        operator === "regexp" ||
+        operator === "notRegexp" ||
+        operator === "like" ||
+        operator === "iLike" ||
+        operator === "notLike" ||
+        operator === "notILike"
+      ) {
         return "$regex";
       } else if (operator === "contains") {
         return "$eq";
@@ -185,13 +192,17 @@ module.exports = class search {
     } else if (this.search === undefined && this.field === undefined) {
       searchsInMongoDb[transformedOperator] = this.value;
     } else if (this.search === undefined) {
-      if (this.operator === 'like' || this.operator === 'notLike') {
-        const valueToRegex = `^${this.value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
+      if (this.operator === "like" || this.operator === "notLike") {
+        const valueToRegex = `^${this.value
+          .replace(/_/g, ".")
+          .replace(/%/g, ".*?")}$`;
         searchsInMongoDb[this.field] = {
           [transformedOperator]: valueToRegex,
-        }
-      } else if (this.operator === "iLike" || this.operator === "notILike" ) {
-        const valueToRegex = `^${this.value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
+        };
+      } else if (this.operator === "iLike" || this.operator === "notILike") {
+        const valueToRegex = `^${this.value
+          .replace(/_/g, ".")
+          .replace(/%/g, ".*?")}$`;
         searchsInMongoDb[this.field] = {
           [transformedOperator]: valueToRegex,
           $options: "i",
@@ -353,7 +364,7 @@ module.exports = class search {
       case "iLike":
       // contains and notContains are implemented via an OR connection of multiple LIKE searches.
       case "contains":
-      case "notContains": 
+      case "notContains":
         return "LIKE";
       case "like":
       case "and":
@@ -362,7 +373,7 @@ module.exports = class search {
       case "between":
       case "in":
         return ` ${operator.toUpperCase()} `;
-      
+
         break;
       default:
         throw new Error(`Operator ${operator} is not supported`);
@@ -394,23 +405,19 @@ module.exports = class search {
       let value = this.value;
 
       const pattern =
-      storageType === "AmazonS3"
-        ? [
-            `'${this.value}${arrayDelimiter}%'`,
-            `'%${arrayDelimiter}${this.value}${arrayDelimiter}%'`,
-            `'%${arrayDelimiter}${this.value}'`,
-          ]
-        : stringType.includes(type.replace(/\s+/g, "").slice(1, -1))
-        ? [
-            `'["${this.value}",%'`,
-            `'%,"${this.value}",%'`,
-            `'%,"${this.value}"]'`,
-          ]
-        : [
-            `'[${this.value},%'`,
-            `'%,${this.value},%'`,
-            `'%,${this.value}]'`,
-          ];
+        storageType === "AmazonS3"
+          ? [
+              `'${this.value}${arrayDelimiter}%'`,
+              `'%${arrayDelimiter}${this.value}${arrayDelimiter}%'`,
+              `'%${arrayDelimiter}${this.value}'`,
+            ]
+          : stringType.includes(type.replace(/\s+/g, "").slice(1, -1))
+          ? [
+              `'["${this.value}",%'`,
+              `'%,"${this.value}",%'`,
+              `'%,"${this.value}"]'`,
+            ]
+          : [`'[${this.value},%'`, `'%,${this.value},%'`, `'%,${this.value}]'`];
 
       if (["between", "notBetween"].includes(this.operator)) {
         if (Array.isArray(value) && value.length === 2 && !arrayType) {
@@ -432,9 +439,7 @@ module.exports = class search {
             );
           }
         }
-      }
-
-      if (arrayType && this.operator === "contains") {
+      } else if (arrayType && this.operator === "contains") {
         value = `'${this.value}'`;
         searchsInAmazonS3 += pattern
           .map((item) => {
@@ -443,13 +448,13 @@ module.exports = class search {
           .join(" OR ");
         searchsInAmazonS3 += ` OR ${this.field} = ${value} `;
       } else if (arrayType && this.operator === "notContains") {
-          value = `'${this.value}'`;
-          searchsInAmazonS3 += pattern
-            .map((item) => {
-              return ` ${this.field} NOT LIKE ${item} `;
-            })
-            .join(" OR ");
-          searchsInAmazonS3 += ` OR ${this.field} = ${value} `;
+        value = `'${this.value}'`;
+        searchsInAmazonS3 += pattern
+          .map((item) => {
+            return ` ${this.field} NOT LIKE ${item} `;
+          })
+          .join(" OR ");
+        searchsInAmazonS3 += ` OR ${this.field} = ${value} `;
       } else {
         if (Array.isArray(value)) {
           if (
@@ -475,16 +480,16 @@ module.exports = class search {
             value = `'${value}'`;
           }
         }
-        if (this.operator === 'regexp') {
-          searchsInAmazonS3 = `${transformedOperator}(${this.field}, ${value})` 
-        } else if (this.operator === 'notRegexp') {
-          searchsInAmazonS3 = `NOT ${transformedOperator}(${this.field}, ${value})`
-        } else if (this.operator === 'iLike') {
-          searchsInAmazonS3 = `LOWER(${this.field}) ${transformedOperator} LOWER(${value})`
-        } else if (this.operator === 'notILike') {
-          searchsInAmazonS3 = `NOT LOWER(${this.field}) ${transformedOperator} LOWER(${value})`
-        } else if (this.operator === 'notLike' || this.operator === 'notIn') {
-          searchsInAmazonS3 = "NOT " + this.field + transformedOperator + value; 
+        if (this.operator === "regexp") {
+          searchsInAmazonS3 = `${transformedOperator}(${this.field}, ${value})`;
+        } else if (this.operator === "notRegexp") {
+          searchsInAmazonS3 = `NOT ${transformedOperator}(${this.field}, ${value})`;
+        } else if (this.operator === "iLike") {
+          searchsInAmazonS3 = `LOWER(${this.field}) ${transformedOperator} LOWER(${value})`;
+        } else if (this.operator === "notILike") {
+          searchsInAmazonS3 = `NOT LOWER(${this.field}) ${transformedOperator} LOWER(${value})`;
+        } else if (this.operator === "notLike" || this.operator === "notIn") {
+          searchsInAmazonS3 = "NOT " + this.field + transformedOperator + value;
         } else {
           searchsInAmazonS3 = this.field + transformedOperator + value;
         }
@@ -521,7 +526,6 @@ module.exports = class search {
     return searchsInAmazonS3;
   }
 
-
   /**
    *
    * @param {*} operator
@@ -544,7 +548,7 @@ module.exports = class search {
       case "gte":
         return " >= ";
       case "like":
-      case "notLike":  
+      case "notLike":
       case "iLike":
       case "notILike":
       case "regexp":
@@ -553,7 +557,7 @@ module.exports = class search {
       case "contains":
       case "notContains":
       case "notIn":
-        return " IN "
+        return " IN ";
       case "and":
       case "or":
       case "not":
@@ -587,10 +591,10 @@ module.exports = class search {
     } else if (this.search === undefined) {
       let arrayType = type != undefined && type.replace(/\s+/g, "")[0] === "[";
       let value = this.value;
-      if (this.operator === 'like' || this.operator === 'notLike') {
-        value = `^${value.replace(/_/g,'.').replace(/%/g,'.*?')}$`;
-      } else if (this.operator === 'iLike' || this.operator === 'notILike') {
-        value =`(?i)^${value.replace(/_/g,'.').replace(/%/g,'.*?')}$`; 
+      if (this.operator === "like" || this.operator === "notLike") {
+        value = `^${value.replace(/_/g, ".").replace(/%/g, ".*?")}$`;
+      } else if (this.operator === "iLike" || this.operator === "notILike") {
+        value = `(?i)^${value.replace(/_/g, ".").replace(/%/g, ".*?")}$`;
       }
       if (Array.isArray(value)) {
         if (
@@ -615,14 +619,15 @@ module.exports = class search {
           : value + " IN n." + this.field;
       } else if (this.operator === "notContains") {
         searchsInNeo4j = Array.isArray(this.value)
-        ? "NOT ALL(x IN " + value + " WHERE x IN n." + this.field + ")"
-        : "NOT " + value + " IN n." + this.field;
+          ? "NOT ALL(x IN " + value + " WHERE x IN n." + this.field + ")"
+          : "NOT " + value + " IN n." + this.field;
       } else {
         // add a NOT if operator is notLike, notILike, notRegexp
         const negator = this.operator.startsWith("not") ? "NOT " : "";
         // eq: array data = array value
         // in: primitive data in array value
-        searchsInNeo4j = negator + "n." + this.field + transformedOperator + value;
+        searchsInNeo4j =
+          negator + "n." + this.field + transformedOperator + value;
       }
     } else if (logicOperaters.includes(this.operator)) {
       if (this.operator === "not") {
