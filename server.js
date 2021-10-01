@@ -44,12 +44,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Force users to sign in to get access to anything else than '/login'
-console.log("Authentication (JWT Bearer Token) required? ", globals.REQUIRE_SIGN_IN);
-if (globals.REQUIRE_SIGN_IN) {
-  app.use(jwt({ secret: globals.JWT_SECRET }).unless({ path: ['/login'] }));
-}
-
 /* Temporary solution:  acl rules set */
 if (process.argv.length > 2 && process.argv[2] == "acl") {
   let node_acl = require("acl");
@@ -61,8 +55,9 @@ if (process.argv.length > 2 && process.argv[2] == "acl") {
   console.log("Authorization rules set!");
 } else {
   console.log(
-    "Server started without Authorization-Check. Start with command " + 
-    "line argument 'acl', if Rule Based Authorization is wanted.");
+    "Server started without Authorization-Check. Start with command " +
+      "line argument 'acl', if Rule Based Authorization is wanted."
+  );
 }
 
 /* Schema */
@@ -181,12 +176,17 @@ app.post("/meta_query", cors(), async (req, res, next) => {
       );
 
       let output = graphQlResponse.data;
-      const resolversHaveData = output ? Object.values(output).some((val) => val) : null;
+      const resolversHaveData = output
+        ? Object.values(output).some((val) => val)
+        : null;
 
       if (resolversHaveData) {
         if (helper.isNotUndefinedAndNotNull(jq)) {
           // jq
-          output = await nodejq.run(jq, graphQlResponse.data, { input: "json", output: "json" });
+          output = await nodejq.run(jq, graphQlResponse.data, {
+            input: "json",
+            output: "json",
+          });
         } else {
           // JSONPath
           output = JSONPath({
