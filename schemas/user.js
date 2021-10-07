@@ -33,7 +33,12 @@ module.exports = `
     """
     countFilteredRoles(search: searchRoleInput) : Int
   
-    }
+    
+    """
+    @record as base64 encoded cursor for paginated connections
+    """
+    asCursor: String!
+}
 type UserConnection{
   edges: [UserEdge]
   users: [user]
@@ -61,11 +66,12 @@ type UserEdge{
     email
     password
   }
+  
   input searchUserInput {
     field: userField
     value: String
     valueType: InputType
-    operator: GenericPrestoSqlOperator
+    operator: GenericPrestoSqlOperator 
     search: [searchUserInput]
   }
 
@@ -80,7 +86,8 @@ type UserEdge{
     users(search: searchUserInput, order: [ orderUserInput ], pagination: paginationInput! ): [user]
     readOneUser(id: ID!): user
     countUsers(search: searchUserInput ): Int
-    vueTableUser : VueTableUser    csvTableTemplateUser: [String]
+    vueTableUser : VueTableUser
+    csvTableTemplateUser: [String]
     usersConnection(search:searchUserInput, order: [ orderUserInput ], pagination: paginationCursorInput! ): UserConnection
   }
 

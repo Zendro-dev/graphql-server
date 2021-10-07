@@ -33,7 +33,12 @@ module.exports = `
     """
     countFilteredUsers(search: searchUserInput) : Int
   
-    }
+    
+    """
+    @record as base64 encoded cursor for paginated connections
+    """
+    asCursor: String!
+}
 type RoleConnection{
   edges: [RoleEdge]
   roles: [role]
@@ -61,11 +66,12 @@ type RoleEdge{
     name
     description
   }
+  
   input searchRoleInput {
     field: roleField
     value: String
     valueType: InputType
-    operator: GenericPrestoSqlOperator
+    operator: GenericPrestoSqlOperator 
     search: [searchRoleInput]
   }
 
@@ -80,7 +86,8 @@ type RoleEdge{
     roles(search: searchRoleInput, order: [ orderRoleInput ], pagination: paginationInput! ): [role]
     readOneRole(id: ID!): role
     countRoles(search: searchRoleInput ): Int
-    vueTableRole : VueTableRole    csvTableTemplateRole: [String]
+    vueTableRole : VueTableRole
+    csvTableTemplateRole: [String]
     rolesConnection(search:searchRoleInput, order: [ orderRoleInput ], pagination: paginationCursorInput! ): RoleConnection
   }
 
