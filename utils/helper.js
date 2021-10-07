@@ -1075,7 +1075,7 @@ module.exports.toGraphQLConnectionObject = function (
   let edges = nodes.map((temp_node) => {
     return {
       node: temp_node,
-      cursor: temp_node.base64Enconde(),
+      cursor: temp_node.base64Encode(),
     };
   });
 
@@ -2544,7 +2544,7 @@ module.exports.buildEdgeObject = function (records) {
     edges = records.map((record) => {
       return {
         node: record,
-        cursor: record.base64Enconde(),
+        cursor: record.base64Encode(),
       };
     });
   }
