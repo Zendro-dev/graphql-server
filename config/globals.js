@@ -54,7 +54,7 @@ const REQUIRE_SIGN_IN = process.env.REQUIRE_SIGN_IN === "false" ? false : true;
 const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS || 10);
 const WHITELIST_ROLES = process.env.WHITELIST_ROLES
   ? process.env.WHITELIST_ROLES.split(",")
-  : ["reader"];
+  : [];
 // Timeouts
 const MAX_TIME_OUT = parseInt(process.env.MAX_TIME_OUT || 2000);
 const EXPORT_TIME_OUT = parseInt(process.env.EXPORT_TIME_OUT || 3600);
