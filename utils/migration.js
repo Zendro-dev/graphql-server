@@ -5,6 +5,9 @@ const { readdir, writeFile } = require("fs/promises");
 
 module.exports = {
   up: async () => {
+    state = state ?? { "last-executed-migration": null };
+    log = log ?? { migration_log: {} };
+
     let migration_file;
     try {
       const zendro = await initializeZendro();
@@ -61,6 +64,8 @@ module.exports = {
     }
   },
   down: async () => {
+    state = state ?? { "last-executed-migration": null };
+    log = log ?? { migration_log: {} };
     const migration = state["last-executed-migration"].file;
     try {
       if (!migration) {
