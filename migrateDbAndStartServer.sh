@@ -12,7 +12,7 @@ do
   waited=$(expr $waited + 2)
 done
 
-# Read config and migrate/seed databases
+# Read config and seed databases
 CONFIG="./config/data_models_storage_config.json"
 SEQUELIZE="./node_modules/.bin/sequelize"
 DB_KEYS=( $(node ./scripts/getStorageTypes.js) )
@@ -30,18 +30,10 @@ for object in ${DB_KEYS[@]}; do
   sequelize_params=(
     "--config $CONFIG"
     "--env $key"
-    "--migrations-path ./migrations/$key/"
     "--seeders-path ./seeders/$key/"
   )
 
   if [[ "$storageType" == "sql" ]]; then
-
-    # Run the migrations
-    if ! $SEQUELIZE db:migrate ${sequelize_params[@]}; then
-      echo -e '\nERROR: Migrating the relational database(s) caused an error.\n'
-      exit 1
-    fi
-
     # Run seeders if needed
     if [ -d ./seeders/$key ]; then
       if ! $SEQUELIZE db:seed:all ${sequelize_params[@]}; then
@@ -50,11 +42,6 @@ for object in ${DB_KEYS[@]}; do
       fi
     fi
 
-  fi
-  
-  if [[ "$storageType" == "cassandra" ]]; then
-    # Run the migrations
-    node ./scripts/setup_cassandra_db.js
   fi
 
 done

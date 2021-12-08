@@ -5,7 +5,6 @@ require("dotenv").config();
  */
 const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN;
 const JWT_SECRET = process.env.JWT_SECRET;
-
 if (!ALLOW_ORIGIN || !JWT_SECRET) {
   throw new Error("Some mandatory environment variables have not been set\n", {
     ALLOW_ORIGIN,
@@ -55,6 +54,7 @@ const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS || 10);
 const WHITELIST_ROLES = process.env.WHITELIST_ROLES
   ? process.env.WHITELIST_ROLES.split(",")
   : [];
+const DOWN_MIGRATION = process.env.DOWN_MIGRATION === "true" ? true : false;
 // Timeouts
 const MAX_TIME_OUT = parseInt(process.env.MAX_TIME_OUT || 2000);
 const EXPORT_TIME_OUT = parseInt(process.env.EXPORT_TIME_OUT || 3600);
@@ -75,6 +75,7 @@ const config = {
   MAIL_PASSWORD,
   EXPORT_TIME_OUT,
   WHITELIST_ROLES,
+  DOWN_MIGRATION,
 };
 
 module.exports = config;

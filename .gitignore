@@ -7,3 +7,7 @@ seeders
 
 # User secret env vars
 .env
+
+# Zendro migration state
+zendro_migration_state.json
+zendro_migration_log.json
