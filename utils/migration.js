@@ -1,12 +1,27 @@
 const { initializeZendro } = require("./zendro.js");
-let state = require("../zendro_migration_state.json");
-let log = require("../zendro_migration_log.json");
-const { readdir, writeFile } = require("fs/promises");
+
+const { readdir, writeFile, access } = require("fs/promises");
 
 module.exports = {
   up: async () => {
-    state = state ?? { "last-executed-migration": null };
-    log = log ?? { migration_log: {} };
+    let state;
+    let log;
+    try {
+      await access(__dirname + "/../zendro_migration_state.json");
+      state = require(__dirname + "/../zendro_migration_state.json");
+    } catch (error) {
+      console.log(error);
+      console.log("create a new object for migration state");
+      state = { "last-executed-migration": null };
+    }
+    try {
+      await access(__dirname + "/../zendro_migration_log.json");
+      log = require(__dirname + "/../zendro_migration_log.json");
+    } catch (error) {
+      console.log(error);
+      console.log("create a new object for zendro state");
+      log = { migration_log: {} };
+    }
 
     let migration_file;
     try {
@@ -64,8 +79,24 @@ module.exports = {
     }
   },
   down: async () => {
-    state = state ?? { "last-executed-migration": null };
-    log = log ?? { migration_log: {} };
+    let state;
+    let log;
+    try {
+      await access(__dirname + "/../zendro_migration_state.json");
+      state = require(__dirname + "/../zendro_migration_state.json");
+    } catch (error) {
+      console.log(error);
+      console.log("create a new object for migration state");
+      state = { "last-executed-migration": null };
+    }
+    try {
+      await access(__dirname + "/../zendro_migration_log.json");
+      log = require(__dirname + "/../zendro_migration_log.json");
+    } catch (error) {
+      console.log(error);
+      console.log("create a new object for zendro state");
+      log = { migration_log: {} };
+    }
     const migration = state["last-executed-migration"].file;
     try {
       if (!migration) {
