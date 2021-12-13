@@ -12,7 +12,9 @@ const nodejq = require("node-jq");
 const { JSONPath } = require("jsonpath-plus");
 const errors = require("./utils/errors");
 const { formatError, graphql } = require("graphql");
-const { up } = require("./utils/migration");
+const models = require("./models/index.js");
+const adapters = require("./models/adapters/index.js");
+const { initializeStorageHandlers } = require("./utils/helper.js");
 
 var acl = null;
 let resolvers = require("./resolvers/index");
@@ -211,7 +213,8 @@ app.use(function (err, req, res, next) {
 });
 
 var server = app.listen(APP_PORT, async () => {
-  await up();
+  await initializeStorageHandlers(models);
+  await initializeStorageHandlers(adapters, "adapter");
   console.log(`App listening on port ${APP_PORT}`);
 });
 

@@ -12,6 +12,7 @@ do
   waited=$(expr $waited + 2)
 done
 
+node -e 'require("./utils/migration").up()'
 # Read config and seed databases
 CONFIG="./config/data_models_storage_config.json"
 SEQUELIZE="./node_modules/.bin/sequelize"
