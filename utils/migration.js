@@ -61,6 +61,7 @@ module.exports = {
         __dirname + `/../zendro_migration_log.json`,
         JSON.stringify(log)
       );
+      process.exit(0);
     } catch (err) {
       log["migration_log"][new Date().toISOString()] = {
         file: migration_file,
@@ -141,6 +142,7 @@ module.exports = {
         __dirname + `/../zendro_migration_log.json`,
         JSON.stringify(log)
       );
+      process.exit(0);
     } catch (err) {
       log["migration_log"][new Date().toISOString()] = {
         file: migration,
