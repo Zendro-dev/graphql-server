@@ -10,7 +10,6 @@ module.exports = {
       await access(__dirname + "/../zendro_migration_state.json");
       state = require(__dirname + "/../zendro_migration_state.json");
     } catch (error) {
-      console.log(error);
       console.log("create a new object for migration state");
       state = { "last-executed-migration": null };
     }
@@ -18,12 +17,12 @@ module.exports = {
       await access(__dirname + "/../zendro_migration_log.json");
       log = require(__dirname + "/../zendro_migration_log.json");
     } catch (error) {
-      console.log(error);
-      console.log("create a new object for zendro state");
+      console.log("create a new object for migration log");
       log = { migration_log: {} };
     }
 
     let migration_file;
+    let model_name;
     try {
       const zendro = await initializeZendro();
       const codeGeneratedTimestamp = state["last-executed-migration"]
@@ -33,13 +32,16 @@ module.exports = {
       const migrationsToRun = codeGeneratedTimestamp
         ? allMigrations.filter(
             (migration) =>
-              new Date(migration.split(">")[0].slice(1)) >
-              codeGeneratedTimestamp
+              new Date(migration.split(">")[0].slice(1)) >=
+                codeGeneratedTimestamp &&
+              migration !== state["last-executed-migration"].file
           )
         : allMigrations;
       for (let migration of migrationsToRun) {
         console.log("perform migration: ", migration);
         migration_file = migration;
+        model_name = migration.split(">")[1].slice(1);
+        model_name = model_name.slice(0, model_name.length - 3);
         const file = require(__dirname + "/../migrations/" + migration);
         await file.up(zendro);
         const timestamp = new Date().toISOString();
@@ -47,7 +49,8 @@ module.exports = {
           file: migration,
           timestamp: timestamp,
         };
-        log["migration_log"][timestamp] = {
+
+        log["migration_log"][timestamp + "&" + model_name] = {
           file: migration,
           direction: "up",
           result: "ok",
@@ -63,7 +66,7 @@ module.exports = {
       );
       process.exit(0);
     } catch (err) {
-      log["migration_log"][new Date().toISOString()] = {
+      log["migration_log"][new Date().toISOString() + "&" + model_name] = {
         file: migration_file,
         direction: "up",
         result: "error",
@@ -98,11 +101,15 @@ module.exports = {
       console.log("create a new object for zendro state");
       log = { migration_log: {} };
     }
-    const migration = state["last-executed-migration"].file;
+    const migration = state["last-executed-migration"]
+      ? state["last-executed-migration"].file
+      : null;
+    if (!migration) {
+      throw Error(`No executed migration! Please check!`);
+    }
+    let model_name = migration.split(">")[1].slice(1);
+    model_name = model_name.slice(0, model_name.length - 3);
     try {
-      if (!migration) {
-        throw Error(`No executed migration! Please check!`);
-      }
       const zendro = await initializeZendro();
       console.log("drop last executed migration: ", migration);
       const file = require(__dirname + "/../migrations/" + migration);
@@ -116,20 +123,22 @@ module.exports = {
           log["migration_log"][key].file !== migration &&
           log["migration_log"][key].direction === "up" &&
           log["migration_log"][key].result === "ok" &&
-          new Date(key) < lastExecutedTimestamp
+          new Date(key.split("&")[0]) < lastExecutedTimestamp
       );
-      const maxTimestamp = candidates.length
+      const maxTimestampKey = candidates.length
         ? candidates.reduce((a, b) => {
-            return new Date(a) > new Date(b) ? a : b;
+            return new Date(a.split("&")[0]) > new Date(b.split("&")[0])
+              ? a
+              : b;
           })
         : null;
-      state["last-executed-migration"] = maxTimestamp
+      state["last-executed-migration"] = maxTimestampKey
         ? {
-            file: log["migration_log"][maxTimestamp].file,
-            timestamp: maxTimestamp,
+            file: log["migration_log"][maxTimestampKey].file,
+            timestamp: maxTimestampKey.split("&")[0],
           }
         : null;
-      log["migration_log"][new Date().toISOString()] = {
+      log["migration_log"][new Date().toISOString() + "&" + model_name] = {
         file: migration,
         direction: "down",
         result: "ok",
@@ -144,7 +153,7 @@ module.exports = {
       );
       process.exit(0);
     } catch (err) {
-      log["migration_log"][new Date().toISOString()] = {
+      log["migration_log"][new Date().toISOString() + "&" + model_name] = {
         file: migration,
         direction: "down",
         result: "error",
