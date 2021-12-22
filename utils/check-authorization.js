@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
-const { JWT_SECRET, WHITELIST_ROLES } = require("../config/globals");
+const { WHITELIST_ROLES, OAUTH2_PUBLIC_KEY } = require("../config/globals");
+const getRoles = require('./roles');
 
 /**
  * @function - Given a context this function check if the user(implicit in context)
@@ -36,10 +37,11 @@ module.exports = async function (context, resource, permission) {
         : undefined;
     console.log("TOKEN", typeof token, token);
     //Identify user from context
-    let decoded = jwt.verify(token, JWT_SECRET);
-
+    jwt.verify(token, OAUTH2_PUBLIC_KEY);
+    // get Roles from the token
+    const roles = getRoles(token);
     //check for permissions from specific roles
-    return context.acl.areAnyRolesAllowed(decoded.roles, resource, permission);
+    return context.acl.areAnyRolesAllowed(roles, resource, permission);
   } catch (err) {
     //invalid token
     console.log("invalid token...");

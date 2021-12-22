@@ -1,5 +1,5 @@
 const jwt =  require('jsonwebtoken');
-const { JWT_SECRET } = require('../config/globals');
+const { OAUTH2_PUBLIC_KEY } = require('../config/globals');
 
 //TODO: Use this routines through all the code to have them in one place
 
@@ -7,7 +7,7 @@ module.exports = {
     getTokenFromContext: function (context) {
         let token_bearer =  context.request.headers["authorization"];
         let token = token_bearer.replace("Bearer ","");
-        let decoded = jwt.verify(token, JWT_SECRET);
+        let decoded = jwt.verify(token, OAUTH2_PUBLIC_KEY);
         return decoded;
     },
 

@@ -4,12 +4,16 @@ require("dotenv").config();
  * Mandatory variables
  */
 const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN;
-const JWT_SECRET = process.env.JWT_SECRET;
+const OAUTH2_TOKEN_URI = process.env.OAUTH2_TOKEN_URI;
+const OAUTH2_CLIENT_ID = process.env.OAUTH2_CLIENT_ID;
+const OAUTH2_PUBLIC_KEY = process.env.OAUTH2_PUBLIC_KEY;
 
-if (!ALLOW_ORIGIN || !JWT_SECRET) {
+if (!ALLOW_ORIGIN || !OAUTH2_TOKEN_URI || !OAUTH2_CLIENT_ID || !OAUTH2_PUBLIC_KEY) {
   throw new Error("Some mandatory environment variables have not been set\n", {
     ALLOW_ORIGIN,
-    JWT_SECRET,
+    OAUTH2_TOKEN_URI,
+    OAUTH2_CLIENT_ID,
+    OAUTH2_PUBLIC_KEY 
   });
 }
 
@@ -63,7 +67,6 @@ const config = {
   LIMIT_RECORDS,
   PORT,
   ALLOW_ORIGIN,
-  JWT_SECRET,
   SALT_ROUNDS,
   REQUIRE_SIGN_IN,
   MAX_TIME_OUT,
@@ -75,6 +78,9 @@ const config = {
   MAIL_PASSWORD,
   EXPORT_TIME_OUT,
   WHITELIST_ROLES,
+  OAUTH2_TOKEN_URI,
+  OAUTH2_CLIENT_ID,
+  OAUTH2_PUBLIC_KEY 
 };
 
 module.exports = config;
