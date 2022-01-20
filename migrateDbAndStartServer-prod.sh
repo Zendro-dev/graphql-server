@@ -48,4 +48,4 @@ for object in ${DB_KEYS[@]}; do
 done
 
 # Start GraphQL-server
-npm start # acl
+node server.js # acl

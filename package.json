@@ -4,7 +4,7 @@
   "description": "Schema as string",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon server.js",
+    "start": "nodemon --ignore 'zendro_migration*.json' server.js",
     "test": "mocha test/test.js --exit"
   },
   "author": "vsuaste",

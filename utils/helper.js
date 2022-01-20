@@ -2551,159 +2551,53 @@ module.exports.buildEdgeObject = function (records) {
   return edges;
 };
 
-module.exports.createIndexes = async (storage, model, definition, database) => {
-  if ("neo4j" === storage) {
-    const driver = await model.storageHandler;
-    const session = driver.session({
-      database: config[database || `default-${storage}`].database,
-    });
-    try {
-      const modelName = definition.model;
-      const label =
-        modelName.length === 1
-          ? modelName.toUpperCase()
-          : modelName.slice(0, 1).toUpperCase() +
-            modelName.slice(1, modelName.length);
-      const id = definition.internalId ?? definition.id.name;
-
-      await session.run(
-        `CREATE INDEX index_${id} IF NOT EXISTS FOR (n:${label}) ON (n.${id})`
-      );
-    } catch (error) {
-      throw error;
-    } finally {
-      await session.close();
-    }
-  } else if ("mongodb" === storage) {
-    try {
-      const db = await model.storageHandler;
-      const collection = await db.collection(definition.model);
-      const id = definition.internalId ?? definition.id.name;
-      await collection.createIndex({ [id]: 1 });
-    } catch (error) {
-      throw error;
-    }
-  }
-};
-
-module.exports.initializeStorageHandlersForModels = async (models) => {
-  console.log("initialize storage handlers for models");
+module.exports.initializeStorageHandlers = async (models, type) => {
+  type = type ?? "model";
+  console.log(`initialize storage handlers for ${type}s`);
   const connectionInstances = await getConnectionInstances();
 
-  console.log("assign storage handler to sql models");
+  const storageTypes = [
+    "sql",
+    "mongodb",
+    "cassandra",
+    "amazonS3",
+    "trino",
+    "presto",
+    "neo4j",
+  ];
+  for (let storage of storageTypes) {
+    if (Object.keys(models[storage]).length) {
+      console.log(`assign storage handler to ${storage} ${type}s`);
 
-  for (let name of Object.keys(models.sql)) {
-    const database = models.sql[name].database;
-    const connection = connectionInstances.get(
-      database || "default-sql"
-    ).connection;
-    if (!connection) throw new ConnectionError(models.sql[name]);
+      for (let name of Object.keys(models[storage])) {
+        const database = models[storage][name].database;
+        const connection = connectionInstances.get(
+          database || `default-${storage}`
+        ).connection;
+        if (!connection) throw new ConnectionError(models[storage][name]);
 
-    // setup storageHandler
-    let model = models[name];
-    getAndConnectDataModelClass(model, connection);
+        // setup storageHandler
+        let model = models[name];
+        getAndConnectDataModelClass(model, connection);
+        if (storage === "sql") {
+          models[name] = model.init(connection, Sequelize);
+        }
 
-    models[name] = model.init(connection, Sequelize);
-    console.log("assign storage handler to model: " + name);
+        console.log(`assign storage handler to ${type}: ${name}`);
+      }
+    }
   }
   /**
    * Important: creates associations based on associations defined in associate
    * function of the model files
    */
-  console.log("create associations among sql models");
-  Object.keys(models.sql).forEach(function (modelName) {
-    if (models[modelName].associate) {
-      models[modelName].associate(models);
-    }
-  });
-
-  const storageTypes = [
-    "mongodb",
-    "cassandra",
-    "amazonS3",
-    "trino",
-    "presto",
-    "neo4j",
-  ];
-  for (let storage of storageTypes) {
-    console.log(`assign storage handler to ${storage} models`);
-
-    for (let name of Object.keys(models[storage])) {
-      const database = models[storage][name].database;
-      const connection = connectionInstances.get(
-        database || `default-${storage}`
-      ).connection;
-      if (!connection) throw new ConnectionError(models[storage][name]);
-
-      // setup storageHandler
-      let model = models[name];
-      getAndConnectDataModelClass(model, connection);
-
-      console.log("assign storage handler to model: " + name);
-      if (["neo4j", "mongodb"].includes(storage)) {
-        await module.exports.createIndexes(
-          storage,
-          model,
-          models[storage][name],
-          database
-        );
+  if (type === "model") {
+    console.log("create associations among sql models");
+    Object.keys(models.sql).forEach(function (modelName) {
+      if (models[modelName].associate) {
+        models[modelName].associate(models);
       }
-    }
-  }
-};
-
-module.exports.initializeStorageHandlersForAdapters = async (adapters) => {
-  console.log("initialize storage handlers for adapters");
-  const connectionInstances = await getConnectionInstances();
-  console.log("assign storage handler to sql adapters");
-
-  for (let name of Object.keys(adapters.sql)) {
-    const database = adapters.sql[name].database;
-    const connection = connectionInstances.get(
-      database || "default-sql"
-    ).connection;
-    if (!connection) throw new ConnectionError(adapters.sql[name]);
-
-    // setup storageHandler
-    let adapter = adapters[name];
-    getAndConnectDataModelClass(adapter, connection);
-
-    adapters[name] = adapter.init(connection, Sequelize);
-    console.log("assign storage handler to adapter: " + name);
-  }
-
-  const storageTypes = [
-    "mongodb",
-    "cassandra",
-    "amazonS3",
-    "trino",
-    "presto",
-    "neo4j",
-  ];
-  for (let storage of storageTypes) {
-    console.log(`assign storage handler to ${storage} adapters`);
-
-    for (let name of Object.keys(adapters[storage])) {
-      const database = adapters[storage][name].database;
-      const connection = connectionInstances.get(
-        database || `default-${storage}`
-      ).connection;
-      if (!connection) throw new ConnectionError(adapters[storage][name]);
-
-      // setup storageHandler
-      let adapter = adapters[name];
-      getAndConnectDataModelClass(adapter, connection);
-
-      console.log("assign storage handler to adapter: " + name);
-      if (["neo4j", "mongodb"].includes(storage)) {
-        await module.exports.createIndexes(
-          storage,
-          adapter,
-          adapters[storage][name],
-          database
-        );
-      }
-    }
+    });
   }
 };
 /**

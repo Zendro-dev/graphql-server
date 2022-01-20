@@ -10,6 +10,7 @@ COPY . .
 RUN apt-get update && apt-get install -y autoconf libtool make && \	
   rm -rf .git* && \
   chmod u+x ./migrateDbAndStartServer.sh && \
+  chmod u+x ./migrateDbAndStartServer-prod.sh && \
   mv ./config/config_postgres_docker.json ./config/config.json && \
   npm install 
 

@@ -5,35 +5,26 @@ const fileUpload = require("express-fileupload");
 const bodyParser = require("body-parser");
 const globals = require("./config/globals");
 const execute = require("./utils/custom-graphql-execute");
-const getRoles = require('./utils/roles');
+const getRoles = require("./utils/roles");
 const helper = require("./utils/helper");
 const nodejq = require("node-jq");
 const { JSONPath } = require("jsonpath-plus");
 const errors = require("./utils/errors");
 const { formatError, graphql } = require("graphql");
-let models = require(path.join(__dirname, "models", "index.js"));
-const initializeStorageHandlersForModels = require(path.join(
-  __dirname,
-  "utils",
-  "helper.js"
-)).initializeStorageHandlersForModels;
-let adapters = require(path.join(__dirname, "models", "adapters", "index.js"));
-const initializeStorageHandlersForAdapters = require(path.join(
-  __dirname,
-  "utils",
-  "helper.js"
-)).initializeStorageHandlersForAdapters;
+const models = require("./models/index.js");
+const adapters = require("./models/adapters/index.js");
+const { initializeStorageHandlers } = require("./utils/helper.js");
 
 var acl = null;
-let resolvers = null;
-let simpleExport = null;
+let resolvers = require("./resolvers/index");
+let simpleExport = require("./utils/simple-export");
 
 var cors = require("cors");
 
 const helpObj = {
   oauth2_service_url: globals.OAUTH2_TOKEN_URI,
   client_id: globals.OAUTH2_CLIENT_ID,
-  grant_type: 'password',
+  grant_type: "password",
   authenticate_curl_template: `curl -X POST \
   --url ${globals.OAUTH2_TOKEN_URI} \
   -d 'Content-Type: application/x-www-form-urlencoded' \
@@ -43,8 +34,8 @@ const helpObj = {
   -d password=<password>
   `,
   execute_graphql_query_curl_template: `curl -X --url <graphql-server>/graphql POST -H "Content-Type: application/json" -H "Authorization: Bearer <access_token>" -d '{"query": "{ ...<your query> }" }'`,
-  info: "1. authenticate with OAuth, 2. query away including the access tokens in the request header. - Note the curl examples can be translated to any programming language. Just send the respective HTTP Requests."
-}
+  info: "1. authenticate with OAuth, 2. query away including the access tokens in the request header. - Note the curl examples can be translated to any programming language. Just send the respective HTTP Requests.",
+};
 
 /* Server */
 const APP_PORT = globals.PORT;
@@ -84,17 +75,15 @@ let Schema = helper.mergeSchemaSetScalarTypes(
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ limit: globals.POST_REQUEST_MAX_BODY_SIZE }));
 
-
-app.use(express.json())
-app.post('/getRolesForOAuth2Token', (req, res) => {
+app.use(express.json());
+app.post("/getRolesForOAuth2Token", (req, res) => {
   const token = req.body.token;
   const roles = getRoles(token);
   res.json({ token: token, roles: roles });
 }),
-  
-app.get('/help', (req, res) => {
-  res.json(helpObj);
-})
+  app.get("/help", (req, res) => {
+    res.json(helpObj);
+  });
 
 app.use("/export", cors(), async (req, res) => {
   //set checker for using in the local method simpleExport
@@ -239,10 +228,8 @@ app.use(function (err, req, res, next) {
 });
 
 var server = app.listen(APP_PORT, async () => {
-  await initializeStorageHandlersForModels(models);
-  await initializeStorageHandlersForAdapters(adapters);
-  resolvers = require("./resolvers/index");
-  simpleExport = require("./utils/simple-export");
+  await initializeStorageHandlers(models);
+  await initializeStorageHandlers(adapters, "adapter");
   console.log(`App listening on port ${APP_PORT}`);
 });
 
