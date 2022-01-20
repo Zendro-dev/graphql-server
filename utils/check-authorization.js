@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { WHITELIST_ROLES, OAUTH2_PUBLIC_KEY } = require("../config/globals");
-const getRoles = require('./roles');
+const getRoles = require("./roles");
 
 /**
  * @function - Given a context this function check if the user(implicit in context)
