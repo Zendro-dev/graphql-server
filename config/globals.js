@@ -5,19 +5,12 @@ require("dotenv").config();
  */
 const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN;
 const OAUTH2_TOKEN_URI = process.env.OAUTH2_TOKEN_URI;
-const OAUTH2_CLIENT_ID = process.env.OAUTH2_CLIENT_ID;
 const OAUTH2_PUBLIC_KEY = process.env.OAUTH2_PUBLIC_KEY;
 
-if (
-  !ALLOW_ORIGIN ||
-  !OAUTH2_TOKEN_URI ||
-  !OAUTH2_CLIENT_ID ||
-  !OAUTH2_PUBLIC_KEY
-) {
+if (!ALLOW_ORIGIN || !OAUTH2_TOKEN_URI || !OAUTH2_PUBLIC_KEY) {
   throw new Error("Some mandatory environment variables have not been set\n", {
     ALLOW_ORIGIN,
     OAUTH2_TOKEN_URI,
-    OAUTH2_CLIENT_ID,
     OAUTH2_PUBLIC_KEY,
   });
 }
@@ -46,6 +39,13 @@ if (!MAIL_ACCOUNT || !MAIL_HOST || !MAIL_PASSWORD || !MAIL_SERVICE) {
 /**
  * Optional variables with sensible defaults
  */
+
+// Graphiql endpoint
+const GRAPHIQL_REDIRECT_URI =
+  process.env.GRAPHIQL_REDIRECT_URI || "http://localhost:7000/*";
+// SPA enpoint
+const SPA_REDIRECT_URI =
+  process.env.SPA_REDIRECT_URI || "http://localhost:8080/*";
 
 // Listening port
 const PORT = parseInt(process.env.PORT || 3000);
@@ -85,9 +85,10 @@ const config = {
   EXPORT_TIME_OUT,
   WHITELIST_ROLES,
   OAUTH2_TOKEN_URI,
-  OAUTH2_CLIENT_ID,
   OAUTH2_PUBLIC_KEY,
   DOWN_MIGRATION,
+  GRAPHIQL_REDIRECT_URI,
+  SPA_REDIRECT_URI,
 };
 
 module.exports = config;

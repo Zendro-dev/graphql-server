@@ -23,13 +23,13 @@ var cors = require("cors");
 
 const helpObj = {
   oauth2_service_url: globals.OAUTH2_TOKEN_URI,
-  client_id: globals.OAUTH2_CLIENT_ID,
+  client_id: "zendro_graphql-server",
   grant_type: "password",
   authenticate_curl_template: `curl -X POST \
   --url ${globals.OAUTH2_TOKEN_URI} \
   -d 'Content-Type: application/x-www-form-urlencoded' \
   -d grant_type=password \
-  -d client_id=${globals.OAUTH2_CLIENT_ID} \
+  -d client_id=zendro_graphql-server \
   -d username=<username> \
   -d password=<password>
   `,
