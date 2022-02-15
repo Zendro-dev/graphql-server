@@ -15,6 +15,7 @@ const { formatError, graphql } = require("graphql");
 const models = require("./models/index.js");
 const adapters = require("./models/adapters/index.js");
 const { initializeStorageHandlers } = require("./utils/helper.js");
+const { BenignErrorArray } = require("./utils/errors");
 
 var acl = null;
 let resolvers = require("./resolvers/index");
@@ -25,6 +26,13 @@ var cors = require("cors");
 /* Server */
 const APP_PORT = globals.PORT;
 const app = express();
+
+let benign_errors_arr = new BenignErrorArray();
+let errors_sink = [];
+let errors_collector = (err) => {
+  errors_sink.push(err);
+};
+benign_errors_arr.on("push", errors_collector);
 
 app.use((req, res, next) => {
   // Website you wish to allow to connect
@@ -117,13 +125,15 @@ app.use(
     context: {
       request: req,
       acl: acl,
-      benignErrors: [],
+      benignErrors: benign_errors_arr,
+      errors_sink: errors_sink,
       recordsLimit: globals.LIMIT_RECORDS,
     },
     customExecuteFn: execute.execute,
     customFormatErrorFn: function (error) {
       errors.customErrorLog(error); // Will log the error either compact (defualt) or verbose dependent on the env variable "ERROR_LOG"
       let extensions = errors.formatGraphQLErrorExtensions(error);
+      errors_sink = [];
       return {
         message: error.message,
         locations: error.locations ? error.locations : "",
@@ -145,7 +155,7 @@ app.post("/meta_query", cors(), async (req, res, next) => {
     let context = {
       request: req,
       acl: acl,
-      benignErrors: [],
+      benignErrors: benign_errors_arr,
       recordsLimit: globals.LIMIT_RECORDS,
     };
 
@@ -186,7 +196,12 @@ app.post("/meta_query", cors(), async (req, res, next) => {
           });
         }
       }
-
+      if (errors_sink.length > 0) {
+        graphQlResponse.errors = graphQlResponse.errors
+          ? graphQlResponse.errors.concat(errors_sink)
+          : errors_sink;
+      }
+      errors_sink = [];
       res.json({ data: output, errors: graphQlResponse.errors });
 
       next();

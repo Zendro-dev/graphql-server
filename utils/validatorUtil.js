@@ -1,5 +1,5 @@
-const gd = require('graphql-iso-date')
-const Ajv = require('ajv')
+const gd = require("graphql-iso-date");
+const Ajv = require("ajv");
 
 /**
  * ifHasValidatorFunctionInvoke - checks if data model has a validator function with
@@ -13,16 +13,19 @@ const Ajv = require('ajv')
  *
  */
 
-module.exports.ifHasValidatorFunctionInvoke = async function( validatorFunction, dataModel, data) {
-    if (typeof dataModel.prototype[validatorFunction] === "function") {
-      try{
-        return await dataModel.prototype[validatorFunction](data);
-      }catch( err) {
-        throw err;
-      }
+module.exports.ifHasValidatorFunctionInvoke = async function (
+  validatorFunction,
+  dataModel,
+  data
+) {
+  if (typeof dataModel.prototype[validatorFunction] === "function") {
+    try {
+      return await dataModel.prototype[validatorFunction](data);
+    } catch (err) {
+      throw err;
     }
+  }
 };
-
 
 /**
  * validateData - It will check if validation methods exist and swith is turned on for the given model, if so, it will validate data
@@ -32,15 +35,20 @@ module.exports.ifHasValidatorFunctionInvoke = async function( validatorFunction,
  * @param  {object} data              Attributes data from a record to be validated. Note: in case of delete validation only id attribute might be used.
  * @return {object}                   If no error occurs, then the same data will be returned, other wise error will be thrown.
  */
-module.exports.validateData = async function(validatorFunction, dataModel, data ){
-  if(typeof dataModel.prototype[validatorFunction] === "function"
-     && typeof dataModel.prototype['validationControl'] === 'object'
-      && dataModel.prototype['validationControl'][validatorFunction]){
-        await dataModel.prototype[validatorFunction](data);
+module.exports.validateData = async function (
+  validatorFunction,
+  dataModel,
+  data
+) {
+  if (
+    typeof dataModel.prototype[validatorFunction] === "function" &&
+    typeof dataModel.prototype["validationControl"] === "object" &&
+    dataModel.prototype["validationControl"][validatorFunction]
+  ) {
+    await dataModel.prototype[validatorFunction](data);
   }
   return data;
-}
-
+};
 
 /**
  * bulkValidateData - It will check if validation methods exist and swith is turned on, if so, it will validate data
@@ -51,28 +59,38 @@ module.exports.validateData = async function(validatorFunction, dataModel, data 
  * @param  {object} benignErrorReporter Error reporter in case any of the records doesn't pass validation.
  * @return {Array}                     Filtered data by validation will be returned, the records which doesn't pass validation are added to the error reporter.
  */
-module.exports.bulkValidateData = async function(validatorFunction, dataModel, data, benignErrorReporter){
+module.exports.bulkValidateData = async function (
+  validatorFunction,
+  dataModel,
+  data,
+  benignErrorReporter
+) {
   let validatedData = data;
-  if(typeof dataModel.prototype[validatorFunction] === "function"
-     && typeof dataModel.prototype['validationControl'] === 'object'
-      && dataModel.prototype['validationControl'][validatorFunction]){
-        validatedData = [];
-        for await( record of data){
-          try{
-            await dataModel.prototype[validatorFunction](record);
-            validatedData.push(record);
-          }catch(error){
-            if(error.message === 'validation failed'){
-              error.errors = error.errors.map( e => { e['validatedRecordId '] = { [dataModel.idAttribute()] : record.getIdValue() }; return e;  } )
-            }
-            benignErrorReporter.reportError(error);
-          };
+  if (
+    typeof dataModel.prototype[validatorFunction] === "function" &&
+    typeof dataModel.prototype["validationControl"] === "object" &&
+    dataModel.prototype["validationControl"][validatorFunction]
+  ) {
+    validatedData = [];
+    for await (record of data) {
+      try {
+        await dataModel.prototype[validatorFunction](record);
+        validatedData.push(record);
+      } catch (error) {
+        if (error.message === "validation failed") {
+          error.errors = error.errors.map((e) => {
+            e["validatedRecordId "] = {
+              [dataModel.idAttribute()]: record.getIdValue(),
+            };
+            return e;
+          });
         }
-
+        benignErrorReporter.push(error);
       }
+    }
+  }
   return validatedData;
-}
-
+};
 
 /**
  * Adds AJV asynchronous keywords to the argument AJV instance that define ISO
@@ -87,78 +105,93 @@ module.exports.bulkValidateData = async function(validatorFunction, dataModel, d
  * this return value can be ignored, as long as the original argument is kept
  * and used.
  */
-module.exports.addDateTimeAjvKeywords = function(ajv) {
-  ajv.addKeyword('isoDate', {
+module.exports.addDateTimeAjvKeywords = function (ajv) {
+  ajv.addKeyword("isoDate", {
     async: true,
-    compile: function(schema, parentSchema) {
-      return async function(data) {
+    compile: function (schema, parentSchema) {
+      return async function (data) {
         try {
           gd.GraphQLDate.serialize(data);
-          return true
+          return true;
         } catch (e) {
-          return new Promise(function(resolve, reject) {
-            return reject(new Ajv.ValidationError([{
-              keyword: 'isoDate',
-              message: 'Must be a GraphQLDate instance or a ISO Date formatted string (e.g. "1900-12-31").',
-              params: {
-                'keyword': 'isoDate'
-              }
-            }]))
-          })
+          return new Promise(function (resolve, reject) {
+            return reject(
+              new Ajv.ValidationError([
+                {
+                  keyword: "isoDate",
+                  message:
+                    'Must be a GraphQLDate instance or a ISO Date formatted string (e.g. "1900-12-31").',
+                  params: {
+                    keyword: "isoDate",
+                  },
+                },
+              ])
+            );
+          });
         }
-      }
+      };
     },
-    errors: true
-  })
+    errors: true,
+  });
 
-  ajv.addKeyword('isoTime', {
+  ajv.addKeyword("isoTime", {
     async: true,
-    compile: function(schema, parentSchema) {
-      return async function(data) {
+    compile: function (schema, parentSchema) {
+      return async function (data) {
         try {
           gd.GraphQLTime.serialize(data);
-          return true
+          return true;
         } catch (e) {
-          return new Promise(function(resolve, reject) {
-            return reject(new Ajv.ValidationError([{
-              keyword: 'isoTime',
-              message: 'Must be a GraphQLTime instance or a ISO Time formatted string (e.g. "13:56:45Z" or "13.56.45.1982Z").',
-              params: {
-                'keyword': 'isoTime'
-              }
-            }]))
-          })
+          return new Promise(function (resolve, reject) {
+            return reject(
+              new Ajv.ValidationError([
+                {
+                  keyword: "isoTime",
+                  message:
+                    'Must be a GraphQLTime instance or a ISO Time formatted string (e.g. "13:56:45Z" or "13.56.45.1982Z").',
+                  params: {
+                    keyword: "isoTime",
+                  },
+                },
+              ])
+            );
+          });
         }
-      }
+      };
     },
-    errors: true
-  })
+    errors: true,
+  });
 
-  ajv.addKeyword('isoDateTime', {
+  ajv.addKeyword("isoDateTime", {
     async: true,
-    compile: function(schema, parentSchema) {
-      return async function(data) {
+    compile: function (schema, parentSchema) {
+      return async function (data) {
         try {
           gd.GraphQLDateTime.serialize(data);
-          return true
+          return true;
         } catch (e) {
-          return new Promise(function(resolve, reject) {
-            return reject(new Ajv.ValidationError([{
-              keyword: 'isoDateTime',
-              message: 'Must be a GraphQLDateTime instance or a ISO Date-Time formatted string (e.g. "1900-12-31T23:59:59Z" or "1900-12-31T23:59:59.1982Z").',
-              params: {
-                'keyword': 'isoDateTime'
-              }
-            }]))
-          })
+          return new Promise(function (resolve, reject) {
+            return reject(
+              new Ajv.ValidationError([
+                {
+                  keyword: "isoDateTime",
+                  message:
+                    'Must be a GraphQLDateTime instance or a ISO Date-Time formatted string (e.g. "1900-12-31T23:59:59Z" or "1900-12-31T23:59:59.1982Z").',
+                  params: {
+                    keyword: "isoDateTime",
+                  },
+                },
+              ])
+            );
+          });
         }
-      }
+      };
     },
-    errors: true
-  })
+    errors: true,
+  });
 
-  return ajv
-}
+  return ajv;
+};
 
 /**
  * Adds AJV asynchronous keyword to the custom validation function
@@ -170,17 +203,17 @@ module.exports.addDateTimeAjvKeywords = function(ajv) {
  * and used.
  */
 module.exports.addValidatorFunc = function addValFuncKeyword(ajv) {
-  ajv.addKeyword('asyncValidatorFunction', {
+  ajv.addKeyword("asyncValidatorFunction", {
     async: true,
-    errors: 'full',
-    compile: function(schema, parentSchema) {
-      return async function(data) {
-        return await schema(data)
-      }
-    }
-  })
-  return ajv
-}
+    errors: "full",
+    compile: function (schema, parentSchema) {
+      return async function (data) {
+        return await schema(data);
+      };
+    },
+  });
+  return ajv;
+};
 
 /**
  *
@@ -188,28 +221,29 @@ module.exports.addValidatorFunc = function addValFuncKeyword(ajv) {
  * @param {Model} model data model class
  */
 module.exports.validateUniquenessOfPrimaryKey = async function (id, model) {
-    let exists = false;
-    let error;
+  let exists = false;
+  let error;
 
-    try {
-      const res = await model.readById(id);
-      exists = true;
-      error = new Ajv.ValidationError([{
-          keyword: 'asyncValidatorFunction',
-          message: `The requested primary key already exists.`,
-      }])
+  try {
+    const res = await model.readById(id);
+    exists = true;
+    error = new Ajv.ValidationError([
+      {
+        keyword: "asyncValidatorFunction",
+        message: `The requested primary key already exists.`,
+      },
+    ]);
+  } catch (err) {
+    if (err.message !== `Record with ID = "${id}" does not exist`) {
+      error = err;
     }
-    catch (err) {
-      if (err.message !== `Record with ID = "${id}" does not exist`) {
-        error = err;
-      }
-    }
+  }
 
-    return {
-      exists,
-      error,
-    };
-}
+  return {
+    exists,
+    error,
+  };
+};
 
 /**
  * Uses the data model abstraction to query the argument data model's argument
@@ -218,38 +252,46 @@ module.exports.validateUniquenessOfPrimaryKey = async function (id, model) {
  * Functions simulates SQL UNIQUE constraint.
  *
  * @param {string} fieldName - the name of the field to be checked for
- * persistent uniqueness. 
+ * persistent uniqueness.
  * @param {(number|string|boolean)} fieldValue - the value of the field to be
- * checked for persistent uniqueness. 
+ * checked for persistent uniqueness.
  * @param {Model} model - data model class
  */
-module.exports.validateUniquenessOfField =
-  async function(fieldName, fieldValue, model) {
-    let error;
-    const fieldType = model.definition.attributes[fieldName];
-    const searchArg = {
-      field: fieldName,
-      operator: 'eq',
-      value: fieldValue,
-      valueType: fieldType
-    };
-    // one found record is enough to reject uniqueness:
-    const paginationArg = {
-      first: 1
-    };
+module.exports.validateUniquenessOfField = async function (
+  fieldName,
+  fieldValue,
+  model
+) {
+  let error;
+  const fieldType = model.definition.attributes[fieldName];
+  const searchArg = {
+    field: fieldName,
+    operator: "eq",
+    value: fieldValue,
+    valueType: fieldType,
+  };
+  // one found record is enough to reject uniqueness:
+  const paginationArg = {
+    first: 1,
+  };
 
-    const modelConnection = await model.readAllCursor(searchArg, undefined,
-      paginationArg);
-    const exists = modelConnection.edges.length > 0;
-    if (exists === true) {
-      error = new Ajv.ValidationError([{
-        keyword: 'asyncValidatorFunction',
+  const modelConnection = await model.readAllCursor(
+    searchArg,
+    undefined,
+    paginationArg
+  );
+  const exists = modelConnection.edges.length > 0;
+  if (exists === true) {
+    error = new Ajv.ValidationError([
+      {
+        keyword: "asyncValidatorFunction",
         message: `A record of type ${model.name} with ${fieldName}: ${fieldValue} already exists.`,
-      }])
-    }
-
-    return {
-      exists,
-      error,
-    };
+      },
+    ]);
   }
+
+  return {
+    exists,
+    error,
+  };
+};
