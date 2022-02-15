@@ -133,9 +133,18 @@ async function registerClient(token, client) {
     `auth/admin/realms/${KEYCLOAK_REALM}/clients`,
     client
   );
-  if (res && res.status === 201) {
+  // generate client secret
+  const clientUUID = await getClientUUID(token, client.clientId);
+
+  const resSecret = await keycloakPostRequest(
+    token,
+    `auth/admin/realms/${KEYCLOAK_REALM}/clients/${clientUUID}/client-secret`
+  );
+  if (res && res.status === 201 && resSecret.status == 200) {
     console.log(`Keycloak client ${JSON.stringify(client)} created`);
   }
+
+  return resSecret.data.value;
 }
 
 /**
@@ -303,20 +312,21 @@ async function createDefaultUser(token) {
  * setupKeyCloak - run the keyCloak setup
  */
 async function setupKeyCloak() {
+  console.log("Setting up keycloak...");
   const token = await getMasterToken();
   await createDefaultRealm(token);
   await registerClient(token, {
     clientId: KEYCLOAK_GQL_CLIENT,
     publicClient: true,
   });
-  await registerClient(token, {
+  const KEYCLOAK_GIQL_CLIENT_SECRET = await registerClient(token, {
     clientId: KEYCLOAK_GIQL_CLIENT,
-    redirectUris: GRAPHIQL_REDIRECT_URI,
+    redirectUris: [GRAPHIQL_REDIRECT_URI],
     publicClient: false,
   });
-  await registerClient(token, {
+  const KEYCLOAK_SPA_CLIENT_SECRET = await registerClient(token, {
     clientId: KEYCLOAK_SPA_CLIENT,
-    redirectUris: SPA_REDIRECT_URI,
+    redirectUris: [SPA_REDIRECT_URI],
     publicClient: false,
   });
   await createDefaultRealmRoles(token);
@@ -324,29 +334,20 @@ async function setupKeyCloak() {
   await associateCompositeRoles(token, KEYCLOAK_GQL_CLIENT);
   await createDefaultUser(token);
 
-  let PUBLIC_KEY = await axios({
-    method: "get",
-    url: `${KEYCLOAK_BASEURL}/auth/realms/zendro`,
-  }).public_key;
-  KEYCLOAK_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----\n${PUBLIC_KEY}\n-----END PUBLIC KEY-----`;
+  let KEYCLOAK_PUBLIC_KEY = await keycloakGetRequest(
+    token,
+    "auth/realms/zendro"
+  );
+  console.log({
+    KEYCLOAK_PUBLIC_KEY,
+    KEYCLOAK_GIQL_CLIENT_SECRET,
+    KEYCLOAK_SPA_CLIENT_SECRET,
+  });
 
-  const giqlClientUUID = await getClientUUID(token, KEYCLOAK_GIQL_CLIENT);
-  const KEYCLOAK_GIQL_CLIENT_SECRET = await axios({
-    method: "get",
-    url: `${KEYCLOAK_BASEURL}/auth/realms/zendro/clients/${giqlClientUUID}/client-secret`,
-  }).value;
-
-  const spaClientUUID = await getClientUUID(token, KEYCLOAK_SPA_CLIENT);
-  const KEYCLOAK_SPA_CLIENT_SECRET = await axios({
-    method: "get",
-    url: `${KEYCLOAK_BASEURL}/auth/realms/zendro/clients/${spaClientUUID}/client-secret`,
-  }).value;
+  KEYCLOAK_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----\\n${KEYCLOAK_PUBLIC_KEY.data.public_key}\\n-----END PUBLIC KEY-----`;
 
   return {
-    KEYCLOAK_BASEURL,
     KEYCLOAK_PUBLIC_KEY,
-    KEYCLOAK_GIQL_CLIENT,
-    KEYCLOAK_SPA_CLIENT,
     KEYCLOAK_GIQL_CLIENT_SECRET,
     KEYCLOAK_SPA_CLIENT_SECRET,
   };
@@ -355,31 +356,14 @@ async function setupKeyCloak() {
 async function cleanupKeyCloak() {
   // Delete the realm
   const token = await getMasterToken();
-
   await keycloakDeleteRequest(token, `auth/realms/${KEYCLOAK_REALM}`);
-
-  // Delete the user and roles
-  // get user
-  const userId = (
-    await keycloakGetRequest(token, `auth/admin/realms/${KEYCLOAK_REALM}/users`)
-  ).data.find((user) => user.username === "zendro-admin").id;
-  await keycloakDeleteRequest(
-    token,
-    `auth/realms/${KEYCLOAK_REALM}/users/${userId}`
-  );
-
-  await keycloakDeleteRequest(
-    token,
-    `auth/realms/${KEYCLOAK_REALM}/roles/realm-administrator`
-  );
-  await keycloakDeleteRequest(
-    token,
-    `auth/realms/${KEYCLOAK_REALM}/roles/realm-editor`
-  );
-  await keycloakDeleteRequest(
-    token,
-    `auth/realms/${KEYCLOAK_REALM}/roles/realm-reader`
-  );
 }
 
-module.exports = { setupKeyCloak, cleanupKeyCloak };
+module.exports = {
+  setupKeyCloak,
+  cleanupKeyCloak,
+  KEYCLOAK_BASEURL,
+  KEYCLOAK_GQL_CLIENT,
+  KEYCLOAK_GIQL_CLIENT,
+  KEYCLOAK_SPA_CLIENT,
+};
