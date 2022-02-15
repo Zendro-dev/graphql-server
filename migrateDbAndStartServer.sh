@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-prod=false
-if [[ $1 = "prod" ]]; then
-  prod=true
+dev=false
+if [[ $1 = "dev" ]]; then
+  dev=true
 fi
 # Wait until the relational database-server up and running
 waited=0
@@ -20,8 +20,8 @@ done
 node -e 'require("./utils/migration").up()'
 
 # Start GraphQL-server
-if [ $prod = true ]; then
-  npm start # acl
+if [ $dev = true ]; then
+  npm run dev # acl
 else
-  npm dev # acl
+  npm start # acl
 fi
