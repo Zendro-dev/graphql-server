@@ -18,7 +18,9 @@ const buildResponse = function (context, data) {
     });
   }
   if (context.contextValue.errors_sink.length > 0) {
-    context.errors = context.errors.concat(context.contextValue.errors_sink);
+    for (let err of context.contextValue.errors_sink) {
+      context.errors = context.errors ? context.errors.concat(err) : [err];
+    }
   }
 
   return context.errors.length === 0

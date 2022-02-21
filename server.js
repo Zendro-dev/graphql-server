@@ -197,9 +197,11 @@ app.post("/meta_query", cors(), async (req, res, next) => {
         }
       }
       if (errors_sink.length > 0) {
-        graphQlResponse.errors = graphQlResponse.errors
-          ? graphQlResponse.errors.concat(errors_sink)
-          : errors_sink;
+        for (let err of errors_sink) {
+          graphQlResponse.errors = graphQlResponse.errors
+            ? graphQlResponse.errors.concat(err)
+            : [err];
+        }
       }
       errors_sink = [];
       res.json({ data: output, errors: graphQlResponse.errors });
