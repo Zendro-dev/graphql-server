@@ -25,16 +25,10 @@ const helpObj = {
   oauth2_service_url: globals.OAUTH2_TOKEN_URI,
   client_id: "zendro_graphql-server",
   grant_type: "password",
-  authenticate_curl_template: `curl -X POST \
-  --url ${globals.OAUTH2_TOKEN_URI} \
-  -d 'Content-Type: application/x-www-form-urlencoded' \
-  -d grant_type=password \
-  -d client_id=zendro_graphql-server \
-  -d username=<username> \
-  -d password=<password>
-  `,
-  execute_graphql_query_curl_template: `curl -X --url <graphql-server>/graphql POST -H "Content-Type: application/json" -H "Authorization: Bearer <access_token>" -d '{"query": "{ ...<your query> }" }'`,
-  info: "1. authenticate with OAuth, 2. query away including the access tokens in the request header. - Note the curl examples can be translated to any programming language. Just send the respective HTTP Requests.",
+  authenticate_curl_template: `curl -X POST --url ${globals.OAUTH2_TOKEN_URI} -d 'Content-Type: application/x-www-form-urlencoded' -d grant_type=password -d client_id=zendro_graphql-server -d username=<username> -d password=<password>`,
+  execute_graphql_query_curl_template: `curl --url <graphql-server>/graphql -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer <access_token>' -d '{"query": "{ ...<your query> }" }'`,
+  execute_meta_query_curl_template: `curl --url <graphql-server>/graphql -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer <access_token>' -H 'jq: <expr>' -d '{"query": "{ ... <your query>}" }'`,
+  info: "1. authenticate with OAuth using e.g authenticate_curl_template to get an access_token, 2. query away including the access tokens in the request header. - Note the curl examples can be translated to any programming language. Just send the respective HTTP Requests.",
 };
 
 /* Server */
