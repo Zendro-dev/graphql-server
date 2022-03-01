@@ -318,6 +318,8 @@ async function setupKeyCloak() {
   await registerClient(token, {
     clientId: KEYCLOAK_GQL_CLIENT,
     publicClient: true,
+    directAccessGrantsEnabled: true,
+    standardFlowEnabled: false,
   });
   const KEYCLOAK_GIQL_CLIENT_SECRET = await registerClient(token, {
     clientId: KEYCLOAK_GIQL_CLIENT,
