@@ -4,12 +4,10 @@ require("dotenv").config();
  * Mandatory variables
  */
 const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN;
-const OAUTH2_TOKEN_URI = process.env.OAUTH2_TOKEN_URI;
 
-if (!ALLOW_ORIGIN || !OAUTH2_TOKEN_URI) {
+if (!ALLOW_ORIGIN) {
   throw new Error("Some mandatory environment variables have not been set\n", {
     ALLOW_ORIGIN,
-    OAUTH2_TOKEN_URI,
   });
 }
 
@@ -23,6 +21,7 @@ const MAIL_PASSWORD = process.env.MAIL_PASSWORD;
 const MAIL_SERVICE = process.env.MAIL_SERVICE;
 const OAUTH2_PUBLIC_KEY = process.env.OAUTH2_PUBLIC_KEY;
 const OAUTH2_CLIENT_ID = process.env.OAUTH2_CLIENT_ID;
+const OAUTH2_TOKEN_URI = process.env.OAUTH2_TOKEN_URI;
 
 if (!MAIL_ACCOUNT || !MAIL_HOST || !MAIL_PASSWORD || !MAIL_SERVICE) {
   console.warn(
@@ -34,6 +33,14 @@ if (!MAIL_ACCOUNT || !MAIL_HOST || !MAIL_PASSWORD || !MAIL_SERVICE) {
       MAIL_SERVICE,
     }
   );
+}
+
+if (!OAUTH2_TOKEN_URI || !OAUTH2_CLIENT_ID || !OAUTH2_PUBLIC_KEY) {
+  console.warn("WARNING: OAuth has not bee properly configured", {
+    OAUTH2_CLIENT_ID,
+    OAUTH2_PUBLIC_KEY,
+    OAUTH2_TOKEN_URI,
+  });
 }
 
 /**
