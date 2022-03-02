@@ -263,6 +263,27 @@ async function associateCompositeRoles(token, clientId) {
   console.log(`Keycloak default roles associated to client ${clientId}`);
 }
 
+async function associateCompositeAdminRoles(token) {
+  const realmManagementClientUUID = await getClientUUID(
+    token,
+    "realm-management"
+  );
+
+  const realmManagementRoleUUIDs = (
+    await keycloakGetRequest(
+      token,
+      `auth/admin/realms/${KEYCLOAK_REALM}/clients/${realmManagementClientUUID}/roles`
+    )
+  ).map((role) => role.id);
+
+  // make the role composite by associating the respective client role
+  await keycloakPostRequest(
+    token,
+    `auth/admin/realms/${KEYCLOAK_REALM}/roles-by-id/${realmRoleId}/composites`,
+    realmManagementRoleUUIDs
+  );
+}
+
 /**
  * createDefaultUser - creates a default admin user for the zendro realm
  */
@@ -334,6 +355,7 @@ async function setupKeyCloak() {
   await createDefaultRealmRoles(token);
   await createDefaultClientRoles(token, KEYCLOAK_GQL_CLIENT);
   await associateCompositeRoles(token, KEYCLOAK_GQL_CLIENT);
+  await associateCompositeAdminRoles(token);
   await createDefaultUser(token);
 
   let KEYCLOAK_PUBLIC_KEY = await keycloakGetRequest(
