@@ -36,7 +36,7 @@ if (!MAIL_ACCOUNT || !MAIL_HOST || !MAIL_PASSWORD || !MAIL_SERVICE) {
 }
 
 if (!OAUTH2_TOKEN_URI || !OAUTH2_CLIENT_ID || !OAUTH2_PUBLIC_KEY) {
-  console.warn("WARNING: OAuth has not bee properly configured", {
+  console.warn("WARNING: OAuth has not been properly configured", {
     OAUTH2_CLIENT_ID,
     OAUTH2_PUBLIC_KEY,
     OAUTH2_TOKEN_URI,
