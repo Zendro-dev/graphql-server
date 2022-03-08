@@ -70,14 +70,17 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ limit: globals.POST_REQUEST_MAX_BODY_SIZE }));
 
 app.use(express.json());
+
+/** return roles from the token as json object */
 app.post("/getRolesForOAuth2Token", (req, res) => {
   const token = req.body.token;
   const roles = getRoles(token);
   res.json({ token: token, roles: roles });
-}),
-  app.get("/help", (req, res) => {
-    res.json(helpObj);
-  });
+});
+
+app.get("/help", (req, res) => {
+  res.json(helpObj);
+});
 
 app.use("/export", cors(), async (req, res) => {
   //set checker for using in the local method simpleExport
