@@ -59,6 +59,13 @@ const DOWN_MIGRATION = process.env.DOWN_MIGRATION === "true" ? true : false;
 const MAX_TIME_OUT = parseInt(process.env.MAX_TIME_OUT || 2000);
 const EXPORT_TIME_OUT = parseInt(process.env.EXPORT_TIME_OUT || 3600);
 
+// bulk creation
+const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || 200);
+const HEADER = process.env.HEADER === "false" ? false : true;
+const RECORD_DELIMITER = process.env.RECORD_DELIMITER || "\n";
+const FIELD_DELIMITER = process.env.FIELD_DELIMITER || ",";
+const ARRAY_DELIMITER = process.env.ARRAY_DELIMITER || ";";
+
 const config = {
   LIMIT_RECORDS,
   PORT,
@@ -76,6 +83,11 @@ const config = {
   EXPORT_TIME_OUT,
   WHITELIST_ROLES,
   DOWN_MIGRATION,
+  BATCH_SIZE,
+  HEADER,
+  RECORD_DELIMITER,
+  FIELD_DELIMITER,
+  ARRAY_DELIMITER,
 };
 
 module.exports = config;
