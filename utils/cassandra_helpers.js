@@ -1,36 +1,42 @@
-
-const _ = require('lodash');
-const { isNotUndefinedAndNotNull, base64Decode } = require('./helper');
-const searchArg = require('./search-argument');
+const _ = require("lodash");
+const searchArg = require("./search-argument");
 
 /**
  * order records records recieved from multiple cassandra-adapters. ordering by token
- * @param {array} matchingRecords 
+ * @param {array} matchingRecords
  */
-module.exports.orderCassandraRecords = function(matchingRecords) {
-  return _.sortBy(matchingRecords, [(record) => {return record.toke.toNumber()}]);
-}
+module.exports.orderCassandraRecords = function (matchingRecords) {
+  return _.sortBy(matchingRecords, [
+    (record) => {
+      return record.toke.toNumber();
+    },
+  ]);
+};
 
 /**
- * 
+ *
  * @param {object} search zendro search
  * @param {object} definition definition as specified in the model
  * @param {boolean} allowFiltering set cql allowFiltering
- * 
+ *
  * @returns {string} cql WHERE ... string
  */
-module.exports.searchConditionsToCassandra = function(search, definition, allowFiltering){
-
-  let whereOptions = '';
-  if (search !== undefined && search !== null) {    
-    if (typeof search !== 'object') {
-        throw new Error('Illegal "search" argument type, it must be an object.');
+module.exports.searchConditionsToCassandra = function (
+  search,
+  definition,
+  allowFiltering
+) {
+  let whereOptions = "";
+  if (search !== undefined && search !== null) {
+    if (typeof search !== "object") {
+      throw new Error('Illegal "search" argument type, it must be an object.');
     }
     let arg = new searchArg(search);
-    whereOptions = ' WHERE ' + arg.toCassandra(definition.attributes, allowFiltering) + ';';
+    whereOptions =
+      " WHERE " + arg.toCassandra(definition.attributes, allowFiltering) + ";";
   }
   return whereOptions;
-}
+};
 
 /**
  * In this function, a special operator is used: "tgt", meaning "TOKEN > TOKEN".
@@ -42,31 +48,35 @@ module.exports.searchConditionsToCassandra = function(search, definition, allowF
  * @param {object} pagination pagination argument given to the query
  * @param {String} idAttribute idAttribute of the model calling this funtion
  */
-module.exports.cursorPaginationArgumentsToCassandra = function(search, pagination, idAttribute) {
-  
+module.exports.cursorPaginationArgumentsToCassandra = function (
+  search,
+  pagination,
+  idAttribute
+) {
+  // workaround: require here to avoid circular dependency.
+  const { isNotUndefinedAndNotNull, base64Decode } = require("./helper");
   let offsetCursor = pagination ? pagination.after : null;
-  let operator = pagination.includeCursor ? 'tget' : 'tgt';
-  let cassandraSearch = Object.assign({},search);
+  let operator = pagination.includeCursor ? "tget" : "tgt";
+  let cassandraSearch = Object.assign({}, search);
   if (isNotUndefinedAndNotNull(offsetCursor)) {
     let decoded_cursor = JSON.parse(base64Decode(offsetCursor));
     let cursorId = decoded_cursor[idAttribute];
-    let cursorSearchCondition  = {
-        field: idAttribute,
-        value: cursorId,
-        operator: operator,
-        search: undefined
+    let cursorSearchCondition = {
+      field: idAttribute,
+      value: cursorId,
+      operator: operator,
+      search: undefined,
     };
     if (isNotUndefinedAndNotNull(search)) {
-        // -- Use *both* the given search condition and the cursor --
-        cassandraSearch = {
-            operator: 'and',
-            search: [search, cursorSearchCondition]
-        };
+      // -- Use *both* the given search condition and the cursor --
+      cassandraSearch = {
+        operator: "and",
+        search: [search, cursorSearchCondition],
+      };
     } else {
-        // -- Use only the cursor --
-        cassandraSearch = cursorSearchCondition;
+      // -- Use only the cursor --
+      cassandraSearch = cursorSearchCondition;
     }
   }
   return cassandraSearch;
-}
-
+};

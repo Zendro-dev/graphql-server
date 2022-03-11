@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+dev=false
+if [[ $1 = "dev" ]]; then
+  dev=true
+fi
 # Wait until the relational database-server up and running
 waited=0
 until node ./scripts/testDatabaseConnectionsAvailable.js 1>/dev/null
@@ -12,40 +16,12 @@ do
   waited=$(expr $waited + 2)
 done
 
+# Run migrations
 node -e 'require("./utils/migration").up()'
-# Read config and seed databases
-CONFIG="./config/data_models_storage_config.json"
-SEQUELIZE="./node_modules/.bin/sequelize"
-DB_KEYS=( $(node ./scripts/getStorageTypes.js) )
-
-for object in ${DB_KEYS[@]}; do
-
-  # Split "key:storageType" in each DB_KEYS element
-  params=(${object//:/ })
-
-  # Retrieve individual values
-  key="${params[0]}"
-  storageType="${params[1]}"
-
-  # Execute sequelize CLI
-  sequelize_params=(
-    "--config $CONFIG"
-    "--env $key"
-    "--seeders-path ./seeders/$key/"
-  )
-
-  if [[ "$storageType" == "sql" ]]; then
-    # Run seeders if needed
-    if [ -d ./seeders/$key ]; then
-      if ! $SEQUELIZE db:seed:all ${sequelize_params[@]}; then
-        echo -e '\nERROR: Seeding the relational database(s) caused an error.\n'
-        exit 1
-      fi
-    fi
-
-  fi
-
-done
 
 # Start GraphQL-server
-npm start # acl
+if [ $dev = true ]; then
+  npm run dev # acl
+else
+  npm start # acl
+fi

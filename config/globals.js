@@ -4,11 +4,10 @@ require("dotenv").config();
  * Mandatory variables
  */
 const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN;
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!ALLOW_ORIGIN || !JWT_SECRET) {
+
+if (!ALLOW_ORIGIN) {
   throw new Error("Some mandatory environment variables have not been set\n", {
     ALLOW_ORIGIN,
-    JWT_SECRET,
   });
 }
 
@@ -20,6 +19,9 @@ const MAIL_ACCOUNT = process.env.MAIL_ACCOUNT;
 const MAIL_HOST = process.env.MAIL_HOST;
 const MAIL_PASSWORD = process.env.MAIL_PASSWORD;
 const MAIL_SERVICE = process.env.MAIL_SERVICE;
+const OAUTH2_PUBLIC_KEY = process.env.OAUTH2_PUBLIC_KEY;
+const OAUTH2_CLIENT_ID = process.env.OAUTH2_CLIENT_ID;
+const OAUTH2_TOKEN_URI = process.env.OAUTH2_TOKEN_URI;
 
 if (!MAIL_ACCOUNT || !MAIL_HOST || !MAIL_PASSWORD || !MAIL_SERVICE) {
   console.warn(
@@ -33,9 +35,24 @@ if (!MAIL_ACCOUNT || !MAIL_HOST || !MAIL_PASSWORD || !MAIL_SERVICE) {
   );
 }
 
+if (!OAUTH2_TOKEN_URI || !OAUTH2_CLIENT_ID || !OAUTH2_PUBLIC_KEY) {
+  console.warn("WARNING: OAuth has not been properly configured", {
+    OAUTH2_CLIENT_ID,
+    OAUTH2_PUBLIC_KEY,
+    OAUTH2_TOKEN_URI,
+  });
+}
+
 /**
  * Optional variables with sensible defaults
  */
+
+// Graphiql endpoint
+const GRAPHIQL_REDIRECT_URI =
+  process.env.GRAPHIQL_REDIRECT_URI || "http://localhost:7000/*";
+// SPA enpoint
+const SPA_REDIRECT_URI =
+  process.env.SPA_REDIRECT_URI || "http://localhost:8080/*";
 
 // Listening port
 const PORT = parseInt(process.env.PORT || 3000);
@@ -70,7 +87,6 @@ const config = {
   LIMIT_RECORDS,
   PORT,
   ALLOW_ORIGIN,
-  JWT_SECRET,
   SALT_ROUNDS,
   REQUIRE_SIGN_IN,
   MAX_TIME_OUT,
@@ -82,12 +98,17 @@ const config = {
   MAIL_PASSWORD,
   EXPORT_TIME_OUT,
   WHITELIST_ROLES,
+  OAUTH2_TOKEN_URI,
+  OAUTH2_PUBLIC_KEY,
+  OAUTH2_CLIENT_ID,
   DOWN_MIGRATION,
   BATCH_SIZE,
   HEADER,
   RECORD_DELIMITER,
   FIELD_DELIMITER,
   ARRAY_DELIMITER,
+  GRAPHIQL_REDIRECT_URI,
+  SPA_REDIRECT_URI,
 };
 
 module.exports = config;

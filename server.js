@@ -1,12 +1,11 @@
 var express = require("express");
 var path = require("path");
 var graphqlHTTP = require("express-graphql");
-var jwt = require("express-jwt");
 const fileUpload = require("express-fileupload");
-const auth = require("./utils/login");
 const bodyParser = require("body-parser");
 const globals = require("./config/globals");
 const execute = require("./utils/custom-graphql-execute");
+const getRoles = require("./utils/roles");
 const helper = require("./utils/helper");
 const nodejq = require("node-jq");
 const { JSONPath } = require("jsonpath-plus");
@@ -22,6 +21,16 @@ let resolvers = require("./resolvers/index");
 let simpleExport = require("./utils/simple-export");
 
 var cors = require("cors");
+
+const helpObj = {
+  oauth2_service_url: globals.OAUTH2_TOKEN_URI,
+  client_id: "zendro_graphql-server",
+  grant_type: "password",
+  authenticate_curl_template: `curl -X POST --url ${globals.OAUTH2_TOKEN_URI} -d 'Content-Type: application/x-www-form-urlencoded' -d grant_type=password -d client_id=zendro_graphql-server -d username=<username> -d password=<password>`,
+  execute_graphql_query_curl_template: `curl --url <graphql-server>/graphql -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer <access_token>' -d '{"query": "{ ...<your query> }" }'`,
+  execute_meta_query_curl_template: `curl --url <graphql-server>/graphql -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer <access_token>' -H 'jq: <expr>' -d '{"query": "{ ... <your query>}" }'`,
+  info: "1. authenticate with OAuth using e.g authenticate_curl_template to get an access_token, 2. query away including the access tokens in the request header. - Note the curl examples can be translated to any programming language. Just send the respective HTTP Requests.",
+};
 
 /* Server */
 const APP_PORT = globals.PORT;
@@ -64,18 +73,21 @@ let Schema = helper.mergeSchemaSetScalarTypes(
   path.join(__dirname, "./schemas")
 );
 
-const { leftShift } = require("mathjs");
 /* Parse urlencoded bodies and JSON by bodyParser middlewares*/
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ limit: globals.POST_REQUEST_MAX_BODY_SIZE }));
 
-app.use("/login", cors(), async (req, res) => {
-  try {
-    const token = await auth.login(req.body);
-    res.json({ token: token });
-  } catch (err) {
-    res.status(500).send({ error: `${err}. Please check your credentials.` });
-  }
+app.use(express.json());
+
+/** return roles from the token as json object */
+app.post("/getRolesForOAuth2Token", (req, res) => {
+  const token = req.body.token;
+  const roles = getRoles(token);
+  res.json({ token: token, roles: roles });
+});
+
+app.get("/help", (req, res) => {
+  res.json(helpObj);
 });
 
 app.use("/export", cors(), async (req, res) => {
