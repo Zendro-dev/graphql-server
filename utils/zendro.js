@@ -17,11 +17,11 @@ module.exports.initializeZendro = async () => {
     models,
     resolvers,
     adapters,
-    execute_qraphql,
+    execute_graphql,
   };
 };
 
-const execute_qraphql = async (query, variables) => {
+const execute_graphql = async (query, variables) => {
   try {
     let benign_errors_arr = new BenignErrorArray();
     let errors_sink = [];
