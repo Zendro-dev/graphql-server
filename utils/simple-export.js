@@ -34,9 +34,7 @@ jsonToCSV = function (row_data, attributes) {
       str_csv += `"NULL"${FIELD_DELIMITER}`;
     } else {
       str_csv += Array.isArray(row_data[att])
-        ? JSON.stringify(row_data[att].join(`${ARRAY_DELIMITER}`))
-        : typeof row_data[att] == "string"
-        ? JSON.stringify(row_data[att])
+        ? '"' + row_data[att].join(`${ARRAY_DELIMITER}`) + '"'
         : '"' + row_data[att] + '"';
       str_csv += `${FIELD_DELIMITER}`;
     }
