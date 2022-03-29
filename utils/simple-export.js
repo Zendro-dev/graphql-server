@@ -77,7 +77,7 @@ module.exports = async function (context, body_info, writableStream) {
 
     //pagination
     let batch_step = {
-      first: `${BATCH_SIZE}`,
+      first: 2,
     };
 
     let hasNextPage = total_records > 0;
