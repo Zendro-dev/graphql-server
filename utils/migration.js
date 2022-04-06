@@ -1,9 +1,6 @@
 const { initializeZendro } = require("./zendro.js");
 
 const { readdir, writeFile, access } = require("fs/promises");
-const {
-  fieldsConflictMessage,
-} = require("graphql/validation/rules/OverlappingFieldsCanBeMerged");
 const path = require("path");
 
 module.exports = {
@@ -33,7 +30,7 @@ module.exports = {
         ? new Date(
             state["last-executed-migration"].file
               .split("#")[0]
-              .replace("_", ":")
+              .replace(/_/g, ":")
           )
         : null;
       const allMigrations = (
@@ -42,7 +39,7 @@ module.exports = {
       const migrationsToRun = codeGeneratedTimestamp
         ? allMigrations.filter(
             (migration) =>
-              new Date(migration.split("#")[0].replace("_", ":")) >=
+              new Date(migration.split("#")[0].replace(/_/g, ":")) >=
                 codeGeneratedTimestamp &&
               migration !== state["last-executed-migration"].file
           )

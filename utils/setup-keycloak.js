@@ -1,5 +1,4 @@
 const axios = require("axios");
-const url = require("url");
 /** ENV */
 const {
   GRAPHIQL_REDIRECT_URI,
@@ -16,9 +15,10 @@ const KEYCLOAK_REALM = "zendro";
 const KEYCLOAK_USER = "admin";
 const KEYCLOAK_PASSWORD = "admin";
 
-const KEYCLOAK_BASEURL = `${new URL(OAUTH2_TOKEN_URI).protocol}//${
-  new URL(OAUTH2_TOKEN_URI).host
-}`;
+const auth = OAUTH2_TOKEN_URI.includes("auth") ? "/auth" : "";
+const KEYCLOAK_BASEURL =
+  `${new URL(OAUTH2_TOKEN_URI).protocol}//${new URL(OAUTH2_TOKEN_URI).host}` +
+  auth;
 
 /**
  * keyCloakPostRequest - helper function for sending POST requests to the keycloak server
@@ -93,7 +93,7 @@ async function getMasterToken() {
   try {
     const res = await axios({
       method: "post",
-      url: `${KEYCLOAK_BASEURL}/auth/realms/master/protocol/openid-connect/token`,
+      url: `${KEYCLOAK_BASEURL}/realms/master/protocol/openid-connect/token`,
       data: `username=${KEYCLOAK_USER}&password=${KEYCLOAK_PASSWORD}&grant_type=password&client_id=admin-cli`,
       headers: {
         "content-type": "application/x-www-form-urlencoded;charset=utf-8",
@@ -113,7 +113,7 @@ async function getMasterToken() {
  * createDefaultRealm - create the default zendro realm in the keycloak server
  */
 async function createDefaultRealm(token) {
-  const res = await keycloakPostRequest(token, `auth/admin/realms`, {
+  const res = await keycloakPostRequest(token, `admin/realms`, {
     id: KEYCLOAK_REALM,
     realm: KEYCLOAK_REALM,
     accessTokenLifespan: 600,
@@ -130,7 +130,7 @@ async function createDefaultRealm(token) {
 async function registerClient(token, client) {
   const res = await keycloakPostRequest(
     token,
-    `auth/admin/realms/${KEYCLOAK_REALM}/clients`,
+    `admin/realms/${KEYCLOAK_REALM}/clients`,
     client
   );
   // generate client secret
@@ -138,7 +138,7 @@ async function registerClient(token, client) {
 
   const resSecret = await keycloakPostRequest(
     token,
-    `auth/admin/realms/${KEYCLOAK_REALM}/clients/${clientUUID}/client-secret`
+    `admin/realms/${KEYCLOAK_REALM}/clients/${clientUUID}/client-secret`
   );
   if (res && res.status === 201 && resSecret.status == 200) {
     console.log(`Keycloak client ${JSON.stringify(client)} created`);
@@ -151,29 +151,17 @@ async function registerClient(token, client) {
  * createDefaultRoles - create default zendro roles "administrator", "editor", and "reader" for the realm and the registered clients
  */
 async function createDefaultRealmRoles(token) {
-  await keycloakPostRequest(
-    token,
-    `auth/admin/realms/${KEYCLOAK_REALM}/roles`,
-    {
-      name: "realm-administrator",
-    }
-  );
+  await keycloakPostRequest(token, `admin/realms/${KEYCLOAK_REALM}/roles`, {
+    name: "realm-administrator",
+  });
 
-  await keycloakPostRequest(
-    token,
-    `auth/admin/realms/${KEYCLOAK_REALM}/roles`,
-    {
-      name: "realm-editor",
-    }
-  );
+  await keycloakPostRequest(token, `admin/realms/${KEYCLOAK_REALM}/roles`, {
+    name: "realm-editor",
+  });
 
-  await keycloakPostRequest(
-    token,
-    `auth/admin/realms/${KEYCLOAK_REALM}/roles`,
-    {
-      name: "realm-reader",
-    }
-  );
+  await keycloakPostRequest(token, `admin/realms/${KEYCLOAK_REALM}/roles`, {
+    name: "realm-reader",
+  });
 
   console.log(`Keycloak default realm roles created`);
 }
@@ -184,7 +172,7 @@ async function createDefaultRealmRoles(token) {
 async function getClientUUID(token, clientId) {
   const clients = await keycloakGetRequest(
     token,
-    `auth/admin/realms/${KEYCLOAK_REALM}/clients`
+    `admin/realms/${KEYCLOAK_REALM}/clients`
   );
 
   return clients.data.find((client) => client.clientId === clientId).id;
@@ -199,7 +187,7 @@ async function createDefaultClientRoles(token, clientId) {
 
   await keycloakPostRequest(
     token,
-    `auth/admin/realms/${KEYCLOAK_REALM}/clients/${clientUUID}/roles`,
+    `admin/realms/${KEYCLOAK_REALM}/clients/${clientUUID}/roles`,
     {
       name: "administrator",
     }
@@ -207,7 +195,7 @@ async function createDefaultClientRoles(token, clientId) {
 
   await keycloakPostRequest(
     token,
-    `auth/admin/realms/${KEYCLOAK_REALM}/clients/${clientUUID}/roles`,
+    `admin/realms/${KEYCLOAK_REALM}/clients/${clientUUID}/roles`,
     {
       name: "editor",
     }
@@ -215,7 +203,7 @@ async function createDefaultClientRoles(token, clientId) {
 
   await keycloakPostRequest(
     token,
-    `auth/admin/realms/${KEYCLOAK_REALM}/clients/${clientUUID}/roles`,
+    `admin/realms/${KEYCLOAK_REALM}/clients/${clientUUID}/roles`,
     {
       name: "reader",
     }
@@ -237,7 +225,7 @@ async function associateCompositeRoles(token, clientId) {
     const realmRoleId = (
       await keycloakGetRequest(
         token,
-        `auth/admin/realms/${KEYCLOAK_REALM}/roles/realm-${role}`
+        `admin/realms/${KEYCLOAK_REALM}/roles/realm-${role}`
       )
     ).data.id;
 
@@ -245,14 +233,14 @@ async function associateCompositeRoles(token, clientId) {
     const clientRoleId = (
       await keycloakGetRequest(
         token,
-        `auth/admin/realms/${KEYCLOAK_REALM}/clients/${clientUUID}/roles/${role}`
+        `admin/realms/${KEYCLOAK_REALM}/clients/${clientUUID}/roles/${role}`
       )
     ).data.id;
 
     // make the role composite by associating the respective client role
     await keycloakPostRequest(
       token,
-      `auth/admin/realms/${KEYCLOAK_REALM}/roles-by-id/${realmRoleId}/composites`,
+      `admin/realms/${KEYCLOAK_REALM}/roles-by-id/${realmRoleId}/composites`,
       [
         {
           id: clientRoleId,
@@ -272,13 +260,13 @@ async function associateCompositeAdminRoles(token) {
   const realmRoleId = (
     await keycloakGetRequest(
       token,
-      `auth/admin/realms/${KEYCLOAK_REALM}/roles/realm-administrator`
+      `admin/realms/${KEYCLOAK_REALM}/roles/realm-administrator`
     )
   ).data.id;
 
   const realmManagementRoles = await keycloakGetRequest(
     token,
-    `auth/admin/realms/${KEYCLOAK_REALM}/clients/${realmManagementClientUUID}/roles`
+    `admin/realms/${KEYCLOAK_REALM}/clients/${realmManagementClientUUID}/roles`
   );
 
   const realmManagementRoleUUIDs = realmManagementRoles.data.map((role) => {
@@ -287,7 +275,7 @@ async function associateCompositeAdminRoles(token) {
   // make the role composite by associating the respective client role
   await keycloakPostRequest(
     token,
-    `auth/admin/realms/${KEYCLOAK_REALM}/roles-by-id/${realmRoleId}/composites`,
+    `admin/realms/${KEYCLOAK_REALM}/roles-by-id/${realmRoleId}/composites`,
     realmManagementRoleUUIDs
   );
 
@@ -301,24 +289,20 @@ async function associateCompositeAdminRoles(token) {
  */
 async function createDefaultUser(token) {
   // create the user
-  await keycloakPostRequest(
-    token,
-    `auth/admin/realms/${KEYCLOAK_REALM}/users`,
-    {
-      username: "zendro-admin",
-      credentials: [
-        {
-          temporary: false,
-          value: "admin",
-        },
-      ],
-      enabled: "true",
-    }
-  );
+  await keycloakPostRequest(token, `admin/realms/${KEYCLOAK_REALM}/users`, {
+    username: "zendro-admin",
+    credentials: [
+      {
+        temporary: false,
+        value: "admin",
+      },
+    ],
+    enabled: "true",
+  });
 
   // get user
   const userId = (
-    await keycloakGetRequest(token, `auth/admin/realms/${KEYCLOAK_REALM}/users`)
+    await keycloakGetRequest(token, `admin/realms/${KEYCLOAK_REALM}/users`)
   ).data.find((user) => user.username === "zendro-admin").id;
 
   // associate user to roles
@@ -327,13 +311,13 @@ async function createDefaultUser(token) {
     const realmRoleId = (
       await keycloakGetRequest(
         token,
-        `auth/admin/realms/${KEYCLOAK_REALM}/roles/realm-${role}`
+        `admin/realms/${KEYCLOAK_REALM}/roles/realm-${role}`
       )
     ).data.id;
 
     await keycloakPostRequest(
       token,
-      `auth/admin/realms/${KEYCLOAK_REALM}/users/${userId}/role-mappings/realm`,
+      `admin/realms/${KEYCLOAK_REALM}/users/${userId}/role-mappings/realm`,
       [{ id: realmRoleId, name: `realm-${role}` }]
     );
   }
@@ -370,10 +354,7 @@ async function setupKeyCloak() {
   await associateCompositeAdminRoles(token);
   await createDefaultUser(token);
 
-  let KEYCLOAK_PUBLIC_KEY = await keycloakGetRequest(
-    token,
-    "auth/realms/zendro"
-  );
+  let KEYCLOAK_PUBLIC_KEY = await keycloakGetRequest(token, "realms/zendro");
   console.log({
     KEYCLOAK_PUBLIC_KEY,
     KEYCLOAK_GIQL_CLIENT_SECRET,
@@ -392,7 +373,7 @@ async function setupKeyCloak() {
 async function cleanupKeyCloak() {
   // Delete the realm
   const token = await getMasterToken();
-  await keycloakDeleteRequest(token, `auth/realms/${KEYCLOAK_REALM}`);
+  await keycloakDeleteRequest(token, `realms/${KEYCLOAK_REALM}`);
 }
 
 module.exports = {
