@@ -77,7 +77,7 @@ const MAX_TIME_OUT = parseInt(process.env.MAX_TIME_OUT || 2000);
 const EXPORT_TIME_OUT = parseInt(process.env.EXPORT_TIME_OUT || 3600);
 
 // bulk creation
-const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || 200);
+const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || 20);
 const RECORD_DELIMITER = process.env.RECORD_DELIMITER || "\n";
 const FIELD_DELIMITER = process.env.FIELD_DELIMITER || ",";
 const ARRAY_DELIMITER = process.env.ARRAY_DELIMITER || ";";
