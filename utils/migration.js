@@ -1,9 +1,6 @@
 const { initializeZendro } = require("./zendro.js");
 
 const { readdir, writeFile, access } = require("fs/promises");
-const {
-  fieldsConflictMessage,
-} = require("graphql/validation/rules/OverlappingFieldsCanBeMerged");
 const path = require("path");
 
 module.exports = {
@@ -30,7 +27,11 @@ module.exports = {
     try {
       const zendro = await initializeZendro();
       const codeGeneratedTimestamp = state["last-executed-migration"]
-        ? new Date(state["last-executed-migration"].file.split(">")[0].slice(1))
+        ? new Date(
+            state["last-executed-migration"].file
+              .split("#")[0]
+              .replace(/_/g, ":")
+          )
         : null;
       const allMigrations = (
         await readdir(__dirname + "/../migrations/")
@@ -38,7 +39,7 @@ module.exports = {
       const migrationsToRun = codeGeneratedTimestamp
         ? allMigrations.filter(
             (migration) =>
-              new Date(migration.split(">")[0].slice(1)) >=
+              new Date(migration.split("#")[0].replace(/_/g, ":")) >=
                 codeGeneratedTimestamp &&
               migration !== state["last-executed-migration"].file
           )
@@ -46,7 +47,7 @@ module.exports = {
       for (let migration of migrationsToRun) {
         console.log("perform migration: ", migration);
         migration_file = migration;
-        model_name = migration.split(">")[1].slice(1);
+        model_name = migration.split("#")[1];
         model_name = model_name.slice(0, model_name.length - 3);
         const file = require(__dirname + "/../migrations/" + migration);
         await file.up(zendro);
@@ -113,7 +114,7 @@ module.exports = {
     if (!migration) {
       throw Error(`No executed migration! Please check!`);
     }
-    let model_name = migration.split(">")[1].slice(1);
+    let model_name = migration.split("#")[1];
     model_name = model_name.slice(0, model_name.length - 3);
     try {
       const zendro = await initializeZendro();

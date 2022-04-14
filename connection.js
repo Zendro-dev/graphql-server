@@ -116,9 +116,17 @@ const addConnectionInstances = async () => {
       key !== "operatorsAliases" &&
       storageType === "sql"
     ) {
+      const config =
+        storageConfig[key].dialect == "sqlite"
+          ? {
+              dialect: storageConfig[key].dialect,
+              storage: __dirname + "/" + storageConfig[key].storage,
+            }
+          : storageConfig[key];
+      const connection = new Sequelize(config);
       connectionInstances.set(key, {
         storageType,
-        connection: new Sequelize(storageConfig[key]),
+        connection: connection,
       });
     } else if (
       storageConfig.hasOwnProperty(key) &&
@@ -253,6 +261,7 @@ exports.checkConnections = async () => {
       }
       checks.push({ key, valid: true });
     } catch (exception) {
+      console.error(exception);
       checks.push({ key, valid: false });
     }
   }

@@ -1,8 +1,10 @@
-const rewire = require('rewire');
-const execute = rewire('graphql/execution/execute')
+const rewire = require("rewire");
+const execute = rewire("graphql/execution/execute");
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-var _isPromise = require('graphql/jsutils/isPromise.js');
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : { default: obj };
+}
+var _isPromise = require("graphql/jsutils/isPromise.js");
 var _isPromise2 = _interopRequireDefault(_isPromise);
 
 /**
@@ -15,11 +17,16 @@ const buildResponse = function (context, data) {
       return buildResponse(context, resolved);
     });
   }
-  if (context.contextValue.benignErrors.length > 0) {
-    context.errors = context.errors.concat(context.contextValue.benignErrors)
+  if (context.contextValue.errors_sink.length > 0) {
+    for (let err of context.contextValue.errors_sink) {
+      context.errors = context.errors ? context.errors.concat(err) : [err];
+    }
   }
-    return context.errors.length === 0 ? { data: data } : { errors: context.errors, data: data };
-}
 
-execute.__set__('buildResponse', buildResponse)
-module.exports = execute
+  return context.errors.length === 0
+    ? { data: data }
+    : { errors: context.errors, data: data };
+};
+
+execute.__set__("buildResponse", buildResponse);
+module.exports = execute;

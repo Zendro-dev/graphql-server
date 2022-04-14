@@ -1270,39 +1270,6 @@ module.exports.addExclusions = function (
 };
 
 /**
- * writeBenignErrors - writes the benignErrors to the context and removes them
- * from the resultObject
- *
- * @param {object} authorizationCheck - return value of authorizedAdapters Helper.
- * @param {object} context - The GraphQL context passed to the resolver.
- * @param {array} resultObj - Connection- or CountObj returned by ddm readMany.
- *
- * @return {array} Returns the changed resultObj and context with the added benignErrors
- */
-module.exports.writeBenignErrors = function (
-  authorizationCheck,
-  context,
-  resultObj
-) {
-  //check adapter authorization Errors
-  if (authorizationCheck.authorizationErrors.length > 0) {
-    context.benignErrors = context.benignErrors.concat(
-      authorizationCheck.authorizationErrors
-    );
-  }
-  //check Errors returned by the model layer (time-outs, unreachable, etc...)
-  if (
-    resultObj.errors !== undefined &&
-    Array.isArray(resultObj.errors) &&
-    resultObj.errors.length > 0
-  ) {
-    context.benignErrors = context.benignErrors.concat(resultObj.errors);
-    delete resultObj["errors"];
-  }
-  return [resultObj, context];
-};
-
-/**
  * addSearchField - Creates a new search object which one will include the new search
  * instance (@field, @value, @operator) with values passed as arguments.
  *
