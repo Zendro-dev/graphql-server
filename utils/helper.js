@@ -955,9 +955,10 @@ module.exports.parseOrderCursorBeforeGeneric = function (
  *
  * @param{Array | object} ids_to_check The IDs that are to be checked, as an array or as a single value
  * @param{object} model The model for which the IDs shall be checked
+ * @param{string} token The token used for authorization
  * @returns{Promise<boolean>} Are all IDs in use?
  */
-module.exports.checkExistence = async function (ids_to_check, model) {
+module.exports.checkExistence = async function (ids_to_check, model, token) {
   //check
   if (!module.exports.isNotUndefinedAndNotNull(ids_to_check)) {
     throw new Error(
@@ -982,16 +983,21 @@ module.exports.checkExistence = async function (ids_to_check, model) {
         : [allResponsibleAdapters];
       let countIds = await model.countRecords(
         searchArg,
-        module.exports.unique(allResponsibleAdaptersAsArray)
+        module.exports.unique(allResponsibleAdaptersAsArray),
+        undefined,
+        undefined,
+        token
       );
       return countIds === ids.length;
     }
-    let countIds = await model.countRecords(searchArg);
+    let countIds = await model.countRecords(searchArg, undefined, token);
     return countIds === ids.length;
   } catch (err) {
     return await ids.reduce(async (prev, curr) => {
       let acc = await prev;
-      return acc && (await model.readById(curr)) !== undefined;
+      return (
+        acc && (await model.readById(curr, undefined, token)) !== undefined
+      );
     }, Promise.resolve(true));
   }
 };
@@ -1001,10 +1007,15 @@ module.exports.checkExistence = async function (ids_to_check, model) {
  *
  * @param{Array | object} idsToExist The IDs that are supposed to exist, as an array or as a single value
  * @param{object} model The model for which the IDs should exist
+ * @param{string} token The token used for authorization
  * @throws If there is an ID given without a corresponding record in the model, in which case the first ID not to exist is given in the error message
  */
-module.exports.validateExistence = async function (idsToExist, model) {
-  let idsNotInUse = await module.exports.checkExistence(idsToExist, model);
+module.exports.validateExistence = async function (idsToExist, model, token) {
+  let idsNotInUse = await module.exports.checkExistence(
+    idsToExist,
+    model,
+    token
+  );
   if (!idsNotInUse) {
     throw new Error(
       `A given ID has no existing record in data model ${model.definition.model}`
@@ -1666,7 +1677,11 @@ module.exports.validateAssociationArgsExistence = async function (
     let currModelName = associationArgsDef[curr];
     let currModel = modelsIndex[`${currModelName}`];
 
-    await module.exports.validateExistence(currAssocIds, currModel);
+    await module.exports.validateExistence(
+      currAssocIds,
+      currModel,
+      context.request.headers.authorization
+    );
 
     return acc;
   }, Promise.resolve(true));
