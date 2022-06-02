@@ -49,10 +49,15 @@ if (!OAUTH2_TOKEN_URI || !OAUTH2_CLIENT_ID || !OAUTH2_PUBLIC_KEY) {
 
 // Graphiql endpoint
 const GRAPHIQL_REDIRECT_URI =
-  process.env.GRAPHIQL_REDIRECT_URI || "http://localhost:7000/*";
+  process.env.GRAPHIQL_REDIRECT_URI
+    ? process.env.GRAPHIQL_REDIRECT_URI.split(",")
+    : ["http://localhost:7000/graphiql/*","http://localhost/graphiql/*"];
+
 // SPA enpoint
 const SPA_REDIRECT_URI =
-  process.env.SPA_REDIRECT_URI || "http://localhost:8080/*";
+  process.env.SPA_REDIRECT_URI
+    ? process.env.SPA_REDIRECT_URI .split(",")  
+    : ["http://localhost:8080/spa/*","http://localhost/spa/*"];
 
 // Listening port
 const PORT = parseInt(process.env.PORT || 3000);

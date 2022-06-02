@@ -324,12 +324,12 @@ async function setupKeyCloak() {
   });
   const KEYCLOAK_GIQL_CLIENT_SECRET = await registerClient(token, {
     clientId: KEYCLOAK_GIQL_CLIENT,
-    redirectUris: [GRAPHIQL_REDIRECT_URI],
+    redirectUris: GRAPHIQL_REDIRECT_URI,
     publicClient: false,
   });
   const KEYCLOAK_SPA_CLIENT_SECRET = await registerClient(token, {
     clientId: KEYCLOAK_SPA_CLIENT,
-    redirectUris: [SPA_REDIRECT_URI],
+    redirectUris: SPA_REDIRECT_URI,
     publicClient: false,
   });
   await createDefaultRealmRoles(token);
