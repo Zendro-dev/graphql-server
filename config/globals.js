@@ -81,12 +81,6 @@ const DOWN_MIGRATION = process.env.DOWN_MIGRATION === "true" ? true : false;
 const MAX_TIME_OUT = parseInt(process.env.MAX_TIME_OUT || 2000);
 const EXPORT_TIME_OUT = parseInt(process.env.EXPORT_TIME_OUT || 3600);
 
-// bulk creation
-const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || 20);
-const RECORD_DELIMITER = process.env.RECORD_DELIMITER || "\n";
-const FIELD_DELIMITER = process.env.FIELD_DELIMITER || ",";
-const ARRAY_DELIMITER = process.env.ARRAY_DELIMITER || ";";
-
 const config = {
   LIMIT_RECORDS,
   PORT,
@@ -106,10 +100,6 @@ const config = {
   OAUTH2_PUBLIC_KEY,
   OAUTH2_CLIENT_ID,
   DOWN_MIGRATION,
-  BATCH_SIZE,
-  RECORD_DELIMITER,
-  FIELD_DELIMITER,
-  ARRAY_DELIMITER,
   GRAPHIQL_REDIRECT_URI,
   SPA_REDIRECT_URI,
 };

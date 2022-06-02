@@ -1,7 +1,6 @@
 var express = require("express");
 var path = require("path");
 var graphqlHTTP = require("express-graphql");
-const fileUpload = require("express-fileupload");
 const bodyParser = require("body-parser");
 const globals = require("./config/globals");
 const execute = require("./utils/custom-graphql-execute");
@@ -18,7 +17,6 @@ const { BenignErrorArray } = require("./utils/errors");
 
 var acl = null;
 let resolvers = require("./resolvers/index");
-let simpleExport = require("./utils/simple-export");
 
 var cors = require("cors");
 
@@ -90,41 +88,6 @@ app.get("/help", (req, res) => {
   res.json(helpObj);
 });
 
-app.use("/export", cors(), async (req, res) => {
-  //set checker for using in the local method simpleExport
-  res["responseSent"] = false;
-
-  //set MAX_TIME_OUT
-  res.setTimeout(globals.EXPORT_TIME_OUT * 1000, function () {
-    res.end("TIMEOUT EXCEEDS");
-  });
-
-  res.on("finish", () => {
-    res["responseSent"] = true;
-  });
-
-  let context = {
-    request: req,
-    acl: acl,
-    benignErrors: [],
-    recordsLimit: globals.LIMIT_RECORDS,
-  };
-
-  let body_info = req.query;
-
-  try {
-    await simpleExport(context, body_info, res);
-    res.end();
-  } catch (err) {
-    if (!res.responseSent) {
-      res.status(500).send(err);
-    } else {
-      console.error("ERROR IN EXPORT AFTER SENDING THE RESPONSE: " + err);
-    }
-  }
-});
-
-app.use(fileUpload());
 /*request is passed as context by default  */
 app.use(
   "/graphql",
