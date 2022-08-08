@@ -21,7 +21,7 @@ module.exports.initializeZendro = async () => {
   };
 };
 
-const execute_graphql = async (query, variables) => {
+const execute_graphql = async (query, variables, token) => {
   try {
     let benign_errors_arr = new BenignErrorArray();
     let errors_sink = [];
@@ -29,8 +29,9 @@ const execute_graphql = async (query, variables) => {
       errors_sink.push(err);
     };
     benign_errors_arr.on("push", errors_collector);
+    let headers = token ? { headers: { authorization: token } } : null;
     let context = {
-      request: null,
+      request: headers,
       acl: null,
       benignErrors: benign_errors_arr,
       recordsLimit: globals.LIMIT_RECORDS,
