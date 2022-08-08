@@ -22,6 +22,8 @@ const MAIL_SERVICE = process.env.MAIL_SERVICE;
 const OAUTH2_PUBLIC_KEY = process.env.OAUTH2_PUBLIC_KEY;
 const OAUTH2_CLIENT_ID = process.env.OAUTH2_CLIENT_ID;
 const OAUTH2_TOKEN_URI = process.env.OAUTH2_TOKEN_URI;
+const MIGRATION_USERNAME = process.env.MIGRATION_USERNAME;
+const MIGRATION_PASSWORD = process.env.MIGRATION_PASSWORD;
 
 if (!MAIL_ACCOUNT || !MAIL_HOST || !MAIL_PASSWORD || !MAIL_SERVICE) {
   console.warn(
@@ -48,16 +50,14 @@ if (!OAUTH2_TOKEN_URI || !OAUTH2_CLIENT_ID || !OAUTH2_PUBLIC_KEY) {
  */
 
 // Graphiql endpoint
-const GRAPHIQL_REDIRECT_URI =
-  process.env.GRAPHIQL_REDIRECT_URI
-    ? process.env.GRAPHIQL_REDIRECT_URI.split(",")
-    : ["http://localhost:7000/graphiql/*","http://localhost/graphiql/*"];
+const GRAPHIQL_REDIRECT_URI = process.env.GRAPHIQL_REDIRECT_URI
+  ? process.env.GRAPHIQL_REDIRECT_URI.split(",")
+  : ["http://localhost:7000/graphiql/*", "http://localhost/graphiql/*"];
 
 // SPA enpoint
-const SPA_REDIRECT_URI =
-  process.env.SPA_REDIRECT_URI
-    ? process.env.SPA_REDIRECT_URI .split(",")  
-    : ["http://localhost:8080/spa/*","http://localhost/spa/*"];
+const SPA_REDIRECT_URI = process.env.SPA_REDIRECT_URI
+  ? process.env.SPA_REDIRECT_URI.split(",")
+  : ["http://localhost:8080/spa/*", "http://localhost/spa/*"];
 
 // Listening port
 const PORT = parseInt(process.env.PORT || 3000);
@@ -102,6 +102,8 @@ const config = {
   DOWN_MIGRATION,
   GRAPHIQL_REDIRECT_URI,
   SPA_REDIRECT_URI,
+  MIGRATION_USERNAME,
+  MIGRATION_PASSWORD,
 };
 
 module.exports = config;
