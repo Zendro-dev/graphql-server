@@ -31,10 +31,10 @@ module.exports.initializeZendro = async () => {
  * @returns {string} token
  */
 const getToken = async () => {
-  const OAUTH2_TOKEN_URI = process.env.OAUTH2_TOKEN_URI;
-  const MIGRATION_USERNAME = process.env.MIGRATION_USERNAME;
-  const MIGRATION_PASSWORD = process.env.MIGRATION_PASSWORD;
-  const OAUTH2_CLIENT_ID = process.env.OAUTH2_CLIENT_ID;
+  const OAUTH2_TOKEN_URI = globals.OAUTH2_TOKEN_URI;
+  const MIGRATION_USERNAME = globals.MIGRATION_USERNAME;
+  const MIGRATION_PASSWORD = globals.MIGRATION_PASSWORD;
+  const OAUTH2_CLIENT_ID = globals.OAUTH2_CLIENT_ID;
   const axios = require("axios");
   const res = await axios({
     method: "post",
@@ -67,7 +67,7 @@ const execute_graphql = async (query, variables) => {
     benign_errors_arr.on("push", errors_collector);
     let token = null;
     // fetch token when MIGRATION_USERNAME and MIGRATION_PASSWORD are defined
-    if (process.env.MIGRATION_USERNAME && process.env.MIGRATION_PASSWORD) {
+    if (globals.MIGRATION_USERNAME && globals.MIGRATION_PASSWORD) {
       token = await getToken();
     }
     // set token for queries related to a distributed setup
@@ -107,10 +107,10 @@ const execute_graphql = async (query, variables) => {
           : [err];
       }
     }
-    let result = { data: graphQlResponse.data };
-    if (graphQlResponse.errors) {
-      result["errors"] = graphQlResponse.errors;
-    }
+    let result = {
+      data: graphQlResponse.data,
+      ...(graphQlResponse.errors && { errors: graphQlResponse.errors }),
+    };
     return result;
   } catch (error) {
     return { data: null, errors: [formatError(error)] };
