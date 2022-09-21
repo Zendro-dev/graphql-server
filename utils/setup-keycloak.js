@@ -75,22 +75,46 @@ async function keycloakDeleteRequest(token, url) {
 }
 
 /**
+ * sleep helper function
+ * 
+ * @param {number} ms time to wait in ms 
+ */
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+
+/**
  * getMasterToken - get Accesstoken for keycloak rest API
  */
 async function getMasterToken() {
-  const res = await axios({
-    method: "post",
-    url: `${KEYCLOAK_BASEURL}/realms/master/protocol/openid-connect/token`,
-    data: `username=${KEYCLOAK_USER}&password=${KEYCLOAK_PASSWORD}&grant_type=password&client_id=admin-cli`,
-    headers: {
-      "content-type": "application/x-www-form-urlencoded;charset=utf-8",
-    },
-  });
-  if (res && res.data) {
-    return res.data.access_token;
-  } else {
-    throw new Error("Failed requesting an API token");
-  }
+    try {
+      const retries = 5;
+      for (let i = 0; i < retries; i++) {
+        try {
+          const res = await axios({
+            method: "post",
+            url: `${KEYCLOAK_BASEURL}/realms/master/protocol/openid-connect/token`,
+            data: `username=${KEYCLOAK_USER}&password=${KEYCLOAK_PASSWORD}&grant_type=password&client_id=admin-cli`,
+            headers: {
+              "content-type": "application/x-www-form-urlencoded;charset=utf-8",
+            },
+          });
+          if (res && res.data) {
+            return res.data.access_token;
+          } else {
+            console.error("Failed requesting an API token, ...retrying");
+          }
+        } catch (error) {
+          console.error("Failed requesting an API token, ...retrying"); 
+        }
+        await sleep(1000);
+      }
+    } catch (error) {
+      throw new Error("Failed requesting an API token")
+    }
 }
 
 /**
@@ -100,7 +124,7 @@ async function createDefaultRealm(token) {
   const res = await keycloakPostRequest(token, `admin/realms`, {
     id: KEYCLOAK_REALM,
     realm: KEYCLOAK_REALM,
-    accessTokenLifespan: 600,
+    accessTokenLifespan: 1800,
     enabled: true,
   });
   if (res && res.status === 201) {
@@ -325,11 +349,13 @@ async function setupKeyCloak() {
   const KEYCLOAK_GIQL_CLIENT_SECRET = await registerClient(token, {
     clientId: KEYCLOAK_GIQL_CLIENT,
     redirectUris: GRAPHIQL_REDIRECT_URI,
+    attributes: {"post.logout.redirect.uris": GRAPHIQL_REDIRECT_URI[0]},
     publicClient: false,
   });
   const KEYCLOAK_SPA_CLIENT_SECRET = await registerClient(token, {
     clientId: KEYCLOAK_SPA_CLIENT,
     redirectUris: SPA_REDIRECT_URI,
+    attributes: {"post.logout.redirect.uris": SPA_REDIRECT_URI[0]},
     publicClient: false,
   });
   await createDefaultRealmRoles(token);

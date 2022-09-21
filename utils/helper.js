@@ -12,7 +12,7 @@ const {
   GraphQLDateTime,
   GraphQLDate,
   GraphQLTime,
-} = require("graphql-iso-date");
+} = require("graphql-scalars");
 var { graphql } = require("graphql");
 const searchArg = require("./search-argument");
 const { Sequelize } = require("sequelize");

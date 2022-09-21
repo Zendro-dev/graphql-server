@@ -1,4 +1,8 @@
-const gd = require("graphql-iso-date");
+const {
+  GraphQLDateTime,
+  GraphQLDate,
+  GraphQLTime,
+} = require("graphql-scalars");
 const Ajv = require("ajv");
 
 /**
@@ -95,7 +99,7 @@ module.exports.bulkValidateData = async function (
 /**
  * Adds AJV asynchronous keywords to the argument AJV instance that define ISO
  * Date, ISO Time, and ISO DateTime strings or the respective GraphQL instances
- * (see package 'graphql-iso-date'). Use in a schema as in the following
+ * (see package 'graphql-scalars'). Use in a schema as in the following
  * example: let schema = { '$async': true, properties: { startDate: { isoDate:
  * true } } }
  *
@@ -106,12 +110,13 @@ module.exports.bulkValidateData = async function (
  * and used.
  */
 module.exports.addDateTimeAjvKeywords = function (ajv) {
-  ajv.addKeyword("isoDate", {
+  ajv.addKeyword({
+    keyword: "isoDate",
     async: true,
     compile: function (schema, parentSchema) {
       return async function (data) {
         try {
-          gd.GraphQLDate.serialize(data);
+          GraphQLDate.serialize(data);
           return true;
         } catch (e) {
           return new Promise(function (resolve, reject) {
@@ -134,12 +139,13 @@ module.exports.addDateTimeAjvKeywords = function (ajv) {
     errors: true,
   });
 
-  ajv.addKeyword("isoTime", {
+  ajv.addKeyword({
+    keyword: "isoTime",
     async: true,
     compile: function (schema, parentSchema) {
       return async function (data) {
         try {
-          gd.GraphQLTime.serialize(data);
+          GraphQLTime.serialize(data);
           return true;
         } catch (e) {
           return new Promise(function (resolve, reject) {
@@ -162,12 +168,13 @@ module.exports.addDateTimeAjvKeywords = function (ajv) {
     errors: true,
   });
 
-  ajv.addKeyword("isoDateTime", {
+  ajv.addKeyword({
+    keyword: "isoDateTime",
     async: true,
     compile: function (schema, parentSchema) {
       return async function (data) {
         try {
-          gd.GraphQLDateTime.serialize(data);
+          GraphQLDateTime.serialize(data);
           return true;
         } catch (e) {
           return new Promise(function (resolve, reject) {
@@ -203,7 +210,8 @@ module.exports.addDateTimeAjvKeywords = function (ajv) {
  * and used.
  */
 module.exports.addValidatorFunc = function addValFuncKeyword(ajv) {
-  ajv.addKeyword("asyncValidatorFunction", {
+  ajv.addKeyword({
+    keyword: "asyncValidatorFunction",
     async: true,
     errors: "full",
     compile: function (schema, parentSchema) {

@@ -140,7 +140,7 @@ module.exports.handleErrorsInGraphQlResponse = function (
 * @return {object} the extensions object.
 */
 module.exports.formatGraphQLErrorExtensions = function (error) {
-  if (helper.isNotUndefinedAndNotNull(error.extensions)) {
+  if (helper.isNotUndefinedAndNotNull(error.extensions) && Object.keys(error.extensions).length > 0) {
     return error.extensions;
   } else if (error.message === "validation failed") {
     return {
@@ -183,7 +183,7 @@ module.exports.handleCaughtErrorAndBenignErrors = function (
   if (!module.exports.isRemoteGraphQlError(error)) {
     // Non remote error:
     // Was it a time out of the connection?
-    module.exports.ifTimeOutErrorAdjustMessage(error);
+    module.exports.ifTimeOutErrorAdjustMessage(error, url);
     throw error;
   } else {
     // STATUS CODE is NOT 200,

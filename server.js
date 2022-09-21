@@ -1,6 +1,6 @@
 var express = require("express");
 var path = require("path");
-var graphqlHTTP = require("express-graphql");
+var { graphqlHTTP } = require("express-graphql");
 const bodyParser = require("body-parser");
 const globals = require("./config/globals");
 const execute = require("./utils/custom-graphql-execute");
