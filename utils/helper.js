@@ -213,13 +213,28 @@ module.exports.csvTableTemplate = function (modelDefinition) {
     csvTypes.push(id.type);
   }
 
+  let addAssociations = {};
+  const associations = modelDefinition.associations;
+  for (const [assocName, assocObj] of Object.entries(associations)) {
+    let addAssocName =
+      "add" + assocName.slice(0, 1).toUpperCase() + assocName.slice(1);
+    if (assocObj.sourceKey) {
+      addAssociations[assocObj.sourceKey] = addAssocName;
+    } else if (assocObj.keysIn === modelDefiniton.model) {
+      addAssociations[assocObj.targetKey] = addAssocName;
+    }
+  }
   /**
    * Other attributes then.
    */
   Object.keys(attributes).forEach((key) => {
     //not internal id
     if (key !== id.name) {
-      csvHeader.push(key);
+      if (addAssociations[key]) {
+        csvHeader.push(addAssociations[key]);
+      } else {
+        csvHeader.push(key);
+      }
       csvTypes.push(attributes[key]);
     }
   });
@@ -1676,12 +1691,13 @@ module.exports.validateAssociationArgsExistence = async function (
     //do check
     let currModelName = associationArgsDef[curr];
     let currModel = modelsIndex[`${currModelName}`];
+    let token = context.request
+      ? context.request.headers
+        ? context.request.headers.authorization
+        : undefined
+      : undefined;
 
-    await module.exports.validateExistence(
-      currAssocIds,
-      currModel,
-      context.request.headers.authorization
-    );
+    await module.exports.validateExistence(currAssocIds, currModel, token);
 
     return acc;
   }, Promise.resolve(true));

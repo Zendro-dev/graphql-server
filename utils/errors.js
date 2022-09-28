@@ -140,13 +140,17 @@ module.exports.handleErrorsInGraphQlResponse = function (
 * @return {object} the extensions object.
 */
 module.exports.formatGraphQLErrorExtensions = function (error) {
-  if (helper.isNotUndefinedAndNotNull(error.extensions) && Object.keys(error.extensions).length > 0) {
+  if (
+    helper.isNotUndefinedAndNotNull(error.extensions) &&
+    Object.keys(error.extensions).length > 0
+  ) {
     return error.extensions;
   } else if (error.message === "validation failed") {
     return {
       validationErrors: error.originalError
         ? error.originalError.errors
         : error.errors,
+      ...(error.input && { input: error.input }),
     };
   } else if (error.name === "SequelizeValidationError") {
     return { validationErrors: error.originalError.errors };

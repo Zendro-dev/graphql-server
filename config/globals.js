@@ -81,6 +81,12 @@ const DOWN_MIGRATION = process.env.DOWN_MIGRATION === "true" ? true : false;
 const MAX_TIME_OUT = parseInt(process.env.MAX_TIME_OUT || 2000);
 const EXPORT_TIME_OUT = parseInt(process.env.EXPORT_TIME_OUT || 3600);
 
+// bulk upload / download
+const RECORD_DELIMITER = process.env.RECORD_DELIMITER || "\n";
+const FIELD_DELIMITER = process.env.FIELD_DELIMITER || ",";
+const ARRAY_DELIMITER = process.env.ARRAY_DELIMITER || ";";
+const SHEET_NAME = process.env.SHEET_NAME || "";
+
 const config = {
   LIMIT_RECORDS,
   PORT,
@@ -104,6 +110,10 @@ const config = {
   SPA_REDIRECT_URI,
   MIGRATION_USERNAME,
   MIGRATION_PASSWORD,
+  RECORD_DELIMITER,
+  FIELD_DELIMITER,
+  ARRAY_DELIMITER,
+  SHEET_NAME,
 };
 
 module.exports = config;
