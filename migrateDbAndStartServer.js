@@ -10,7 +10,8 @@ runCheck(() => {
   // Start GraphQL-server; uncomment the "acl" to turn on the acl rules
   if (dev)
     childProcess.spawnSync('npm', [
-      'run'
+      'run',
+      'dev'
       // ,'acl'
     ], {stdio: "inherit"});
   else
