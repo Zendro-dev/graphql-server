@@ -154,6 +154,10 @@ module.exports.formatGraphQLErrorExtensions = function (error) {
     };
   } else if (error.name === "SequelizeValidationError") {
     return { validationErrors: error.originalError.errors };
+  } else if (error.input) {
+    return {
+      input: error.input,
+    };
   }
 };
 
