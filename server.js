@@ -41,6 +41,13 @@ let errors_collector = (err) => {
 };
 benign_errors_arr.on("push", errors_collector);
 
+let benign_errors_arr_meta = new BenignErrorArray();
+let errors_sink_meta = [];
+let errors_collector_meta = (err) => {
+  errors_sink_meta.push(err);
+};
+benign_errors_arr_meta.on("push", errors_collector_meta);
+
 app.use((req, res, next) => {
   // Website you wish to allow to connect
   if (globals.REQUIRE_SIGN_IN) {
@@ -130,7 +137,7 @@ app.post("/meta_query", cors(), async (req, res, next) => {
     let context = {
       request: req,
       acl: acl,
-      benignErrors: benign_errors_arr,
+      benignErrors: benign_errors_arr_meta,
       recordsLimit: globals.LIMIT_RECORDS,
     };
 
@@ -171,14 +178,14 @@ app.post("/meta_query", cors(), async (req, res, next) => {
           });
         }
       }
-      if (errors_sink.length > 0) {
-        for (let err of errors_sink) {
+      if (errors_sink_meta.length > 0) {
+        for (let err of errors_sink_meta) {
           graphQlResponse.errors = graphQlResponse.errors
             ? graphQlResponse.errors.concat(err)
             : [err];
         }
       }
-      errors_sink = [];
+      errors_sink_meta = [];
       res.json({ data: output, errors: graphQlResponse.errors });
 
       next();
