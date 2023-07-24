@@ -1,7 +1,10 @@
 const { Sequelize } = require("sequelize");
 const storageConfig = require("./config/data_models_storage_config.json");
 const { MongoClient } = require("mongodb");
-const AWS = require("aws-sdk");
+const {
+  S3,
+  waitUntilBucketExists
+} = require("@aws-sdk/client-s3");
 const presto = require("presto-client");
 const cassandraDriver = require("cassandra-driver");
 const neo4j = require("neo4j-driver");
@@ -83,21 +86,24 @@ async function connectMongoDb(client) {
 
 const setupAmazonS3 = async () => {
   let config = storageConfig["default-amazonS3"];
-  const s3 = new AWS.S3({
-    accessKeyId: config.username,
-    secretAccessKey: config.password,
+  const s3 = new S3({
+    region: "eu-central-1",
+    credentials: {
+        accessKeyId: config.username,
+        secretAccessKey: config.password
+    },
     endpoint: `http://${config.host}:${config.port}`,
-    s3ForcePathStyle: true,
-    signatureVersion: "v4",
+    forcePathStyle: true,
+    signatureVersion: "v4"
   });
 
-  let res = await s3.listBuckets().promise();
+  let res = await s3.listBuckets({});
   let buckets = res.Buckets.map((bucketObj) => bucketObj.Name);
   if (buckets.includes(config.bucket)) {
     console.log(`bucket ${config.bucket} in Minio exists`);
   } else {
     console.log(`create a new bucket in Minio: ${config.bucket}`);
-    res = await s3.createBucket({ Bucket: config.bucket }).promise();
+    res = await s3.createBucket({ Bucket: config.bucket });
   }
 
   return s3;
@@ -229,11 +235,10 @@ exports.checkConnections = async () => {
       } else if (instance.storageType === "cassandra") {
         await instance.connection.connect();
       } else if (instance.storageType === "amazon-s3") {
-        await instance.connection
-          .waitFor("bucketExists", {
-            Bucket: storageConfig["default-amazonS3"].bucket,
-          })
-          .promise();
+        await waitUntilBucketExists(
+            { client: instance.connection, maxWaitTime: 60},
+            { Bucket: storageConfig["default-amazonS3"].bucket }
+          );
       } else if (instance.storageType === "trino") {
         try {
           const trino_conf = storageConfig["default-trino"];
