@@ -23,13 +23,13 @@ const {
 } = require("../connection");
 const config = require("../config/data_models_storage_config.json");
 /**
- * castIdIntoRespectiveType - Casts the primary key attribbute into its respective type as defined in the model definition
+ * castIdentifierToCorrectType - Casts the primary key attribbute into its respective type as defined in the model definition
  *
  * @param  {object} input The data of the record that needs to be created or updated
  * @param  {object} modelDefinition The model definition for the input
  * @return {object}     Modified input
  */
-module.exports.castIdIntoRespectiveType = function (input, modelDefinition) {
+module.exports.castIdentifierToCorrectType = function (input, modelDefinition) {
   const castFunctions = {
     Int: (str) => {
                     let casted = parseInt(str);
