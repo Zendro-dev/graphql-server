@@ -29,31 +29,37 @@ const config = require("../config/data_models_storage_config.json");
  * @param  {object} modelDefinition The model definition for the input
  * @return {object}     Modified input
  */
-module.exports.castIdentifierToCorrectType = function (input, modelDefinition) {
+module.exports.castIdentifierToCorrectType = function(input, modelDefinition) {
   const castFunctions = {
     Int: (str) => {
-                    let casted = parseInt(str);
-                    if (isNaN(casted)) return str;
-                    return casted;
-                  },
+      let casted = parseInt(str);
+      if (isNaN(casted)) return str;
+      return casted;
+    },
     Float: (str) => {
-                    let casted = parseFloat(str);
-                    if (isNaN(casted)) return str;
-                    return casted;
-                  },
+      let casted = parseFloat(str);
+      if (isNaN(casted)) return str;
+      return casted;
+    },
     String: (str) => str,
     Boolean: (str) => {
-                    if (str === "true") return true;
-                    if (str === "false") return false;
-                    return str;
-                  },
+      if (str === "true") return true;
+      if (str === "false") return false;
+      return str;
+    },
     Date: (str) => str,
     Time: (str) => str,
     DateTime: (str) => str
   }
-  const { name, type } = modelDefinition.id;
+  const {
+    name,
+    type
+  } = modelDefinition.id;
   const castedId = castFunctions[type](input[name]);
-  return {...input, [name]: castedId};
+  return {
+    ...input,
+    [name]: castedId
+  };
 };
 
 
