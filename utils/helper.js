@@ -23,6 +23,47 @@ const {
 } = require("../connection");
 const config = require("../config/data_models_storage_config.json");
 /**
+ * castIdentifierToCorrectType - Casts the primary key attribbute into its respective type as defined in the model definition
+ *
+ * @param  {object} input The data of the record that needs to be created or updated
+ * @param  {object} modelDefinition The model definition for the input
+ * @return {object}     Modified input
+ */
+module.exports.castIdentifierToCorrectType = function(input, modelDefinition) {
+  const castFunctions = {
+    Int: (str) => {
+      let casted = parseInt(str);
+      if (isNaN(casted)) return str;
+      return casted;
+    },
+    Float: (str) => {
+      let casted = parseFloat(str);
+      if (isNaN(casted)) return str;
+      return casted;
+    },
+    String: (str) => str,
+    Boolean: (str) => {
+      if (str === "true") return true;
+      if (str === "false") return false;
+      return str;
+    },
+    Date: (str) => str,
+    Time: (str) => str,
+    DateTime: (str) => str
+  }
+  const {
+    name,
+    type
+  } = modelDefinition.id;
+  const castedId = castFunctions[type](input[name]);
+  return {
+    ...input,
+    [name]: castedId
+  };
+};
+
+
+/**
  * paginate - Creates pagination argument as needed in sequelize cotaining limit and offset accordingly to the current
  * page implicit in the request info.
  *
