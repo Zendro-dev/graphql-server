@@ -4,15 +4,12 @@ const path = require("path");
 const dev = process.argv[2] === "dev";
  
 runCheck(() => {
-  // Run migrations
-  childProcess.spawnSync('node', ['-e', 'require("./utils/migration").up()'], {stdio:"inherit"});
- 
   // Start GraphQL-server; uncomment the "acl" to turn on the acl rules
   if (dev)
     childProcess.spawnSync('npm', [
       'run',
       'dev'
-      // ,'acl'
+      //,'acl'
     ], {stdio: "inherit", shell: process.platform === "win32"});
   else
     childProcess.spawnSync('npm', [
@@ -46,7 +43,7 @@ async function runCheck(callback) {
  * start child process to check database connections 
  */
 function checkConnections() {
-	return new Promise((resolve) => {
+  return new Promise((resolve) => {
     let child = childProcess.fork(path.normalize("./scripts/testDatabaseConnectionsAvailable.js"), {stdio: "ignore"});
     child.on("exit", (code) => {
       resolve(code)

@@ -17,11 +17,11 @@ After getting ready the generated code for the models, proceed with the server s
 
 ```sh
 $ npm install
-$ bash migrateDbAndStartServer.sh
+$ node migrateDb.js up
 $ npm start
 ```
 
-The script ```$ migrateDbAndStartServer.sh``` will create the tables specified in the ```migrations``` folder of each database configuration, using the credentials specified in ```config/data_models_storage_config.json``` file.
+The script ```$ node migrateDb.js``` will create the tables specified in the ```migrations``` folder of each database configuration, using the credentials specified in ```config/data_models_storage_config.json``` file.
 
 _NOTE: Databases should be already configured locally in `config/data_models_storage_config.json`_.
 
