@@ -46,6 +46,7 @@
     "chai": "^6.2.2",
     "chai-as-promised": "^8.0.2",
     "mocha": "^11.7.6",
+    "nodemon": "^3.1.9",
     "rewire": "^9.0.1"
   }
 }

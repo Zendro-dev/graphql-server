@@ -11,3 +11,5 @@ seeders
 # Zendro migration state
 zendro_migration_state.json
 zendro_migration_log.json
+
+package-lock.json
