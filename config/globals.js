@@ -25,6 +25,16 @@ const OAUTH2_TOKEN_URI = process.env.OAUTH2_TOKEN_URI;
 const MIGRATION_USERNAME = process.env.MIGRATION_USERNAME;
 const MIGRATION_PASSWORD = process.env.MIGRATION_PASSWORD;
 
+// GraphiQL's own OAuth2 login (see zendro-graphiql) - a separate,
+// confidential Keycloak client from OAUTH2_CLIENT_ID above (the resource
+// server client), only required when GRAPHIQL_AUTH_ENABLED is true.
+const OAUTH2_GRAPHIQL_CLIENT_ID =
+  process.env.OAUTH2_GRAPHIQL_CLIENT_ID || "zendro_graphiql";
+const OAUTH2_GRAPHIQL_CLIENT_SECRET = process.env.OAUTH2_GRAPHIQL_CLIENT_SECRET;
+const OAUTH2_AUTHORIZATION_URI = process.env.OAUTH2_AUTHORIZATION_URI;
+const OAUTH2_LOGOUT_URI = process.env.OAUTH2_LOGOUT_URI;
+const SESSION_SECRET = process.env.SESSION_SECRET;
+
 if (!MAIL_ACCOUNT || !MAIL_HOST || !MAIL_PASSWORD || !MAIL_SERVICE) {
   console.warn(
     "WARNING: BulkAdd email service has not been properly configured",
@@ -58,6 +68,10 @@ const GRAPHIQL_REDIRECT_URI = process.env.GRAPHIQL_REDIRECT_URI
 const SPA_REDIRECT_URI = process.env.SPA_REDIRECT_URI
   ? process.env.SPA_REDIRECT_URI.split(",")
   : ["http://localhost:8080/*"];
+
+// GraphiQL feature flags - both off unless explicitly enabled, see zendro-graphiql
+const GRAPHIQL_AUTH_ENABLED = process.env.GRAPHIQL_AUTH_ENABLED === "true";
+const GRAPHIQL_FILTER_ENABLED = process.env.GRAPHIQL_FILTER_ENABLED === "true";
 
 // Listening port
 const PORT = parseInt(process.env.PORT || 3000);
@@ -105,6 +119,13 @@ const config = {
   OAUTH2_TOKEN_URI,
   OAUTH2_PUBLIC_KEY,
   OAUTH2_CLIENT_ID,
+  OAUTH2_GRAPHIQL_CLIENT_ID,
+  OAUTH2_GRAPHIQL_CLIENT_SECRET,
+  OAUTH2_AUTHORIZATION_URI,
+  OAUTH2_LOGOUT_URI,
+  SESSION_SECRET,
+  GRAPHIQL_AUTH_ENABLED,
+  GRAPHIQL_FILTER_ENABLED,
   DOWN_MIGRATION,
   GRAPHIQL_REDIRECT_URI,
   SPA_REDIRECT_URI,

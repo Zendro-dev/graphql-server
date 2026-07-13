@@ -4,7 +4,7 @@ const rewire = require('rewire');
 const helper = rewire('../utils/helper');
 const _ = require('lodash');
 
-chai.use(require('chai-as-promised'));
+chai.use(require('chai-as-promised').default);
 
 describe('Non-empty array', function() {
     it('1. Undefined', function() {
