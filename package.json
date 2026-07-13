@@ -38,7 +38,6 @@
     "nodemailer-smtp-transport": "=2.4.2",
     "presto-client": "^1.2.0",
     "sequelize": "^6.37.8",
-    "uuid": "^14.0.1",
     "wait-on": "^9.0.10",
     "zendro-graphiql": "file:zendro-graphiql"
   },
