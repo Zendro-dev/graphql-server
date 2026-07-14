@@ -114,7 +114,14 @@ const setupAmazonS3 = async () => {
  */
 const addConnectionInstances = async () => {
   let connectionInstances = new Map();
-  const user = os.userInfo().username;
+  // Only needed for the trino/presto branches below - looked up lazily so
+  // deployments using neither (e.g. sql-only) don't depend on os.userInfo()
+  // succeeding. It throws (uv_os_get_passwd ENOENT) when the process's UID
+  // has no /etc/passwd entry, which is normal when a container runs as an
+  // arbitrary host UID (e.g. `user: "${UID_GID}"` in docker-compose, used
+  // so bind-mounted files aren't owned by root).
+  let user;
+  const getUser = () => (user ??= os.userInfo().username);
   for (let key of Object.keys(storageConfig)) {
     let storageType = storageConfig[key].storageType;
     if (
@@ -169,7 +176,7 @@ const addConnectionInstances = async () => {
       connectionInstances.set(key, {
         storageType,
         connection: new presto.Client({
-          user: `"${user}"`,
+          user: `"${getUser()}"`,
           host: storageConfig[key].trino_host,
           port: storageConfig[key].trino_port,
           catalog: storageConfig[key].catalog,
@@ -186,7 +193,7 @@ const addConnectionInstances = async () => {
       connectionInstances.set(key, {
         storageType,
         connection: new presto.Client({
-          user: `"${user}"`,
+          user: `"${getUser()}"`,
           host: storageConfig[key].presto_host,
           port: storageConfig[key].presto_port,
           catalog: storageConfig[key].catalog,

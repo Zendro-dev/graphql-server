@@ -50,5 +50,8 @@
     "mocha": "^11.7.6",
     "nodemon": "^3.1.9",
     "rewire": "^9.0.1"
+  },
+  "allowScripts": {
+    "node-jq@6.3.1": true
   }
 }

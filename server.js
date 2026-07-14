@@ -10,7 +10,7 @@ const helper = require("./utils/helper");
 const nodejq = require("node-jq");
 const { JSONPath } = require("jsonpath-plus");
 const errors = require("./utils/errors");
-const { formatError, graphql, GraphQLError } = require("graphql");
+const { graphql, GraphQLError } = require("graphql");
 const models = require("./models/index.js");
 const adapters = require("./models/adapters/index.js");
 const { initializeStorageHandlers } = require("./utils/helper.js");
@@ -168,13 +168,17 @@ app.post("/meta_query", cors(), attachGraphiqlSession, async (req, res, next) =>
 
       helper.eitherJqOrJsonpath(jq, jsonPath);
 
-      const graphQlResponse = await graphql(
-        Schema,
-        query,
-        resolvers,
-        context,
-        variables
-      );
+      // graphql-js v16's graphql() takes a single GraphQLArgs object, not
+      // positional args - the old positional call silently passed `Schema`
+      // as the whole args object, so `args.schema` (and everything else)
+      // came out undefined.
+      const graphQlResponse = await graphql({
+        schema: Schema,
+        source: query,
+        rootValue: resolvers,
+        contextValue: context,
+        variableValues: variables,
+      });
 
       let output = graphQlResponse.data;
       const resolversHaveData = output
@@ -210,7 +214,12 @@ app.post("/meta_query", cors(), attachGraphiqlSession, async (req, res, next) =>
       next();
     }
   } catch (error) {
-    res.json({ data: null, errors: [formatError(error)] });
+    // error isn't guaranteed to be a GraphQLError (e.g. eitherJqOrJsonpath's
+    // validation, or a jq/JSONPath execution failure both throw plain
+    // Errors) - graphql's own formatError() assumes a GraphQLError and
+    // throws (no .toJSON()) on anything else, so normalize first.
+    const formatted = error instanceof GraphQLError ? error : new GraphQLError(error.message);
+    res.json({ data: null, errors: [formatted] });
   }
 });
 /**
