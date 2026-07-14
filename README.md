@@ -50,6 +50,34 @@ Create a `.env` file with your desired environment variables.
 * `REQUIRE_SIGN_IN` - Boolean to toggle the required sign in to the graphql server. Default is `true`.
 * `SALT_ROUNDS` - Number of salt rounds when hashing a new password. Default is `10`.
 
+## GraphiQL & Authentication
+
+This server is the only service in a Zendro deployment that talks to Keycloak directly - it already owns authorization (ACL), so it also owns authentication. Two things are built on top of that:
+
+* **`/graphiql`** - the [GraphiQL](https://github.com/graphql/graphiql) IDE, served from the `zendro-graphiql` submodule (`git submodule update --init` then `npm run build:graphiql` to build it). It's purely a UI: it renders a login button and an optional jq/JSONPath filter panel, but holds no credentials itself.
+* **`/auth`** - the actual OAuth2 Authorization Code + PKCE flow against Keycloak, implemented directly in this repo (`utils/auth/`), independent of `/graphiql` - `/graphql`'s and `/meta_query`'s own session middleware depend on it too, and a separate GraphiQL deployment with no Keycloak credentials of its own (like [`graphiql-auth`](https://github.com/Zendro-dev/graphiql-auth)) reverse-proxies to it. See "Acting as an auth backend for other origins" below.
+
+### Auth environment variables
+
+* `AUTH_ENABLED` - Enables the `/auth` router and the login button on `/graphiql`. Defaults to `false`.
+* `OAUTH2_GRAPHIQL_CLIENT_ID` - Confidential Keycloak client id. Defaults to `zendro_graphiql`.
+* `OAUTH2_GRAPHIQL_CLIENT_SECRET` - Kept server-side only; never sent to the browser.
+* `OAUTH2_GRAPHIQL_ISSUER_URI` - Identity provider's OIDC issuer (realm) URL, e.g. `http://keycloak/auth/realms/zendro`. Endpoints are discovered from `<issuerUri>/.well-known/openid-configuration`. Must exactly match what the identity provider itself reports as its `issuer`.
+* `OAUTH2_GRAPHIQL_ISSUER_INTERNAL_URI` - Only needed when `OAUTH2_GRAPHIQL_ISSUER_URI` isn't network-reachable from this process - e.g. Keycloak in Docker Compose with a fixed public hostname that only the browser can reach.
+* `SESSION_SECRET` - HMAC secret signing the session and one-time OAuth flow cookies.
+* `AUTH_REDIRECT_URI` - Comma-separated list. The first entry is this server's own `/auth/callback` URL (must be registered on the Keycloak client); every entry is also the allowlist of other origins this server will run login/logout on behalf of (see below).
+* `GRAPHIQL_FILTER_ENABLED` - Shows the jq/JSONPath filter panel on `/graphiql`. Defaults to `false`.
+
+### Acting as an auth backend for other origins
+
+A separate GraphiQL deployment that only ever talks to one `graphql-server` doesn't need its own copy of the Keycloak client config - it can reverse-proxy `/auth/*` to this server's own `/auth/*`, the same way it already proxies `/graphql` and `/meta_query`.
+
+For this to work, the reverse-proxied `/auth/login` and `/auth/callback` requests need to carry an `X-Zendro-Auth-Redirect-Uri` header set to the proxying frontend's own `<its-origin>/auth/callback` - otherwise Keycloak would redirect the browser back to *this* server's own address, which the browser only reached through the proxy, not directly. `AUTH_REDIRECT_URI` doubles as the allowlist of origins this is honored for (a trailing `*` matches as a prefix) - this is exactly the same list of patterns registered as valid redirect URIs on the Keycloak client, so there's no second, independently-maintained list. An unrecognized header is silently ignored and this server falls back to its own static redirect URI.
+
+The actual cryptographic safety of this still rests on Keycloak: it independently enforces that the `redirect_uri` sent at token-exchange time exactly matches the one used at authorization time, and that value must be registered on the client. The allowlist here only prevents this server from being used as an open redirect_uri echo for origins nobody approved.
+
+`/graphql` and `/meta_query` don't need any special handling on the proxy's part beyond forwarding the request (including cookies) as-is: the session cookie set during the proxied `/auth/callback` is opaque to the proxying frontend and gets read directly by this server's own session middleware once the request arrives here.
+
 
 
 ## Examples
