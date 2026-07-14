@@ -4,15 +4,14 @@ const execute = rewire("graphql/execution/execute");
 function _interopRequireDefault(obj) {
   return obj && obj.__esModule ? obj : { default: obj };
 }
-var _isPromise = require("graphql/jsutils/isPromise.js");
-var _isPromise2 = _interopRequireDefault(_isPromise);
+const { isPromise } = require("graphql/jsutils/isPromise");
 
 /**
  * Given a completed execution context and data, build the { errors, data }
  * response defined by the "Response" section of the GraphQL specification.
  */
 const buildResponse = function (context, data) {
-  if ((0, _isPromise2.default)(data)) {
+  if (isPromise(data)) {
     return data.then(function (resolved) {
       return buildResponse(context, resolved);
     });
