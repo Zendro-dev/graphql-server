@@ -101,8 +101,8 @@ const graphiqlOptions = {
   features: {
     auth: {
       enabled: globals.GRAPHIQL_AUTH_ENABLED,
-      clientId: globals.OAUTH2_GRAPHIQL_CLIENT_ID,
-      clientSecret: globals.OAUTH2_GRAPHIQL_CLIENT_SECRET,
+      clientId: globals.OAUTH2_CLIENT_ID,
+      clientSecret: globals.OAUTH2_CLIENT_SECRET,
       authorizationUri: globals.OAUTH2_AUTHORIZATION_URI,
       tokenUri: globals.OAUTH2_TOKEN_URI,
       logoutUri: globals.OAUTH2_LOGOUT_URI,
