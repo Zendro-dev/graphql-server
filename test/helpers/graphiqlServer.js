@@ -14,6 +14,7 @@ function buildGraphiqlOptions(globals) {
         clientId: globals.OAUTH2_GRAPHIQL_CLIENT_ID,
         clientSecret: globals.OAUTH2_GRAPHIQL_CLIENT_SECRET,
         issuerUri: globals.OAUTH2_GRAPHIQL_ISSUER_URI,
+        issuerInternalUri: globals.OAUTH2_GRAPHIQL_ISSUER_INTERNAL_URI,
         redirectUri: globals.GRAPHIQL_REDIRECT_URI[0],
         sessionSecret: globals.SESSION_SECRET,
       },

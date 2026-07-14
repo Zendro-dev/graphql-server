@@ -34,6 +34,10 @@ const OAUTH2_GRAPHIQL_CLIENT_SECRET = process.env.OAUTH2_GRAPHIQL_CLIENT_SECRET;
 // The realm's OIDC issuer - zendro-graphiql discovers the authorization/
 // token/end-session endpoints from "<issuer>/.well-known/openid-configuration".
 const OAUTH2_GRAPHIQL_ISSUER_URI = process.env.OAUTH2_GRAPHIQL_ISSUER_URI;
+// Only needed when the issuer above isn't reachable from this process (e.g.
+// Keycloak in Docker Compose, where the issuer is the host's published port
+// but this server must connect via the internal service hostname).
+const OAUTH2_GRAPHIQL_ISSUER_INTERNAL_URI = process.env.OAUTH2_GRAPHIQL_ISSUER_INTERNAL_URI;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
 if (!MAIL_ACCOUNT || !MAIL_HOST || !MAIL_PASSWORD || !MAIL_SERVICE) {
@@ -123,6 +127,7 @@ const config = {
   OAUTH2_GRAPHIQL_CLIENT_ID,
   OAUTH2_GRAPHIQL_CLIENT_SECRET,
   OAUTH2_GRAPHIQL_ISSUER_URI,
+  OAUTH2_GRAPHIQL_ISSUER_INTERNAL_URI,
   SESSION_SECRET,
   GRAPHIQL_AUTH_ENABLED,
   GRAPHIQL_FILTER_ENABLED,
