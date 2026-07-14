@@ -106,6 +106,13 @@ const graphiqlOptions = {
       issuerUri: globals.OAUTH2_GRAPHIQL_ISSUER_URI,
       issuerInternalUri: globals.OAUTH2_GRAPHIQL_ISSUER_INTERNAL_URI,
       redirectUri: globals.GRAPHIQL_REDIRECT_URI[0],
+      // Lets a trusted external GraphiQL deployment (e.g. graphiql-auth,
+      // proxying /auth/* here rather than holding its own Keycloak
+      // credentials) run login/logout on behalf of its own origin - see
+      // zendro-graphiql's README, "Acting as an auth backend for other
+      // origins". Reuses the same patterns already registered on the
+      // Keycloak client, rather than a second, independently-maintained list.
+      allowedRedirectUris: globals.GRAPHIQL_REDIRECT_URI,
       sessionSecret: globals.SESSION_SECRET,
     },
     filter: { enabled: globals.GRAPHIQL_FILTER_ENABLED },

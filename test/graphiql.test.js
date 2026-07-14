@@ -110,6 +110,50 @@ test("server.js-shaped wiring: auth enabled", async (t) => {
   });
 });
 
+test("server.js-shaped wiring: acting as an auth backend for a proxied graphiql-auth deployment", async (t) => {
+  const idp = await startFakeIdp();
+  t.after(() => idp.close());
+
+  const server = await startServer({
+    GRAPHIQL_AUTH_ENABLED: true,
+    OAUTH2_GRAPHIQL_CLIENT_ID: "zendro_graphiql",
+    OAUTH2_GRAPHIQL_CLIENT_SECRET: "test-secret",
+    OAUTH2_GRAPHIQL_ISSUER_URI: idp.issuer,
+    // GRAPHIQL_REDIRECT_URI doubles as the allowlist of origins this
+    // instance will run login/logout on behalf of - see server.js.
+    GRAPHIQL_REDIRECT_URI: ["http://localhost:0/graphiql/auth/callback", "http://giql.example/*"],
+    SESSION_SECRET: "session-secret",
+  });
+  const base = `http://localhost:${server.address().port}`;
+  t.after(() => closeServer(server));
+
+  await t.test("/graphiql/auth/login honors the header for an allowlisted origin", async () => {
+    const res = await fetch(`${base}/graphiql/auth/login`, {
+      redirect: "manual",
+      headers: { "x-zendro-auth-redirect-uri": "http://giql.example/auth/callback" },
+    });
+    assert.equal(res.status, 302);
+    const location = new URL(res.headers.get("location"));
+    assert.equal(location.searchParams.get("redirect_uri"), "http://giql.example/auth/callback");
+  });
+
+  await t.test("full round trip on behalf of the proxied origin redirects back there, not to /graphiql", async () => {
+    const loginRes = await fetch(`${base}/graphiql/auth/login`, {
+      redirect: "manual",
+      headers: { "x-zendro-auth-redirect-uri": "http://giql.example/auth/callback" },
+    });
+    const flowCookie = loginRes.headers.get("set-cookie").split(";")[0];
+    const state = new URL(loginRes.headers.get("location")).searchParams.get("state");
+
+    const callbackRes = await fetch(`${base}/graphiql/auth/callback?code=abc&state=${state}`, {
+      headers: { cookie: flowCookie },
+      redirect: "manual",
+    });
+    assert.equal(callbackRes.status, 302);
+    assert.equal(callbackRes.headers.get("location"), "http://giql.example/");
+  });
+});
+
 test("server.js-shaped wiring: everything disabled (the .env.example default)", async (t) => {
   const server = await startServer({
     GRAPHIQL_AUTH_ENABLED: false,

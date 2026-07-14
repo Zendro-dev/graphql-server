@@ -5,7 +5,13 @@ const http = require("node:http");
 // and a token endpoint that issues a real RS256-signed ID token (so
 // openid-client's signature verification actually exercises something real,
 // not just a stub it happens to trust) plus opaque access/refresh tokens.
-async function startFakeIdp() {
+// publicIssuer: simulates an identity provider (like Keycloak with
+// KC_HOSTNAME_BACKCHANNEL_DYNAMIC) whose issuer/authorization_endpoint are a
+// fixed public hostname unreachable from the caller, while token_endpoint/
+// jwks_uri dynamically reflect whatever address actually reached it - the
+// discovery document is only ever served correctly to whoever fetches it
+// from this fake server's own (internal) address.
+async function startFakeIdp({ publicIssuer } = {}) {
   const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
   const kid = "test-key-1";
   const jwk = publicKey.export({ format: "jwk" });
@@ -15,12 +21,13 @@ async function startFakeIdp() {
 
   let issuer;
   let tokenMode = "ok"; // "ok" | "error"
+  const tokenRequests = [];
 
   function signIdToken(clientId) {
     const header = { alg: "RS256", typ: "JWT", kid };
     const now = Math.floor(Date.now() / 1000);
     const payload = {
-      iss: issuer,
+      iss: publicIssuer || issuer,
       aud: clientId,
       sub: "test-user-id",
       preferred_username: "test-user",
@@ -37,13 +44,14 @@ async function startFakeIdp() {
     const url = new URL(req.url, issuer);
 
     if (url.pathname === "/.well-known/openid-configuration") {
+      const frontchannel = publicIssuer || issuer;
       res.setHeader("Content-Type", "application/json");
       return res.end(
         JSON.stringify({
-          issuer,
-          authorization_endpoint: `${issuer}/protocol/openid-connect/auth`,
+          issuer: frontchannel,
+          authorization_endpoint: `${frontchannel}/protocol/openid-connect/auth`,
           token_endpoint: `${issuer}/protocol/openid-connect/token`,
-          end_session_endpoint: `${issuer}/protocol/openid-connect/logout`,
+          end_session_endpoint: `${frontchannel}/protocol/openid-connect/logout`,
           jwks_uri: `${issuer}/protocol/openid-connect/certs`,
           response_types_supported: ["code"],
           subject_types_supported: ["public"],
@@ -63,6 +71,12 @@ async function startFakeIdp() {
       req.on("data", (c) => chunks.push(c));
       req.on("end", () => {
         const params = new URLSearchParams(Buffer.concat(chunks).toString("utf8"));
+        // Real identity providers strictly validate that redirect_uri here
+        // matches what was sent at authorization time - this fake one
+        // doesn't (it has no notion of "what was sent then" to check
+        // against), so it only records it for tests to assert on directly,
+        // rather than silently accepting whatever the client happens to send.
+        tokenRequests.push(Object.fromEntries(params));
         res.setHeader("Content-Type", "application/json");
         if (tokenMode === "error") {
           res.statusCode = 400;
@@ -92,6 +106,7 @@ async function startFakeIdp() {
   return {
     server,
     issuer,
+    tokenRequests,
     setTokenMode: (mode) => {
       tokenMode = mode;
     },
