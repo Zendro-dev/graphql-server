@@ -4,7 +4,7 @@
 // full server.js: this repo checkout has no generated resolvers/schemas
 // (produced by a separate Zendro code-gen step), and that generated layer
 // is orthogonal to what's being verified here - that server.js wires the
-// GraphiQL router and session middleware together correctly.
+// GraphiQL router, auth router, and session middleware together correctly.
 //
 // zendro-graphiql's own test suite (zendro-graphiql/test/) covers the
 // router/middleware/session logic in isolation; this file only covers the
@@ -21,11 +21,11 @@ test("server.js-shaped wiring: auth enabled", async (t) => {
   t.after(() => idp.close());
 
   const server = await startServer({
-    GRAPHIQL_AUTH_ENABLED: true,
+    AUTH_ENABLED: true,
     OAUTH2_GRAPHIQL_CLIENT_ID: "zendro_graphiql",
     OAUTH2_GRAPHIQL_CLIENT_SECRET: "test-secret",
     OAUTH2_GRAPHIQL_ISSUER_URI: idp.issuer,
-    GRAPHIQL_REDIRECT_URI: ["http://localhost:0/graphiql/auth/callback"],
+    AUTH_REDIRECT_URI: ["http://localhost:0/auth/callback"],
     SESSION_SECRET: "session-secret",
     GRAPHIQL_FILTER_ENABLED: true,
   });
@@ -53,20 +53,20 @@ test("server.js-shaped wiring: auth enabled", async (t) => {
     assert.deepEqual(await res.json(), { authHeader: null });
   });
 
-  await t.test("/graphiql/auth/login is reachable and redirects to the discovered authorization endpoint", async () => {
-    const res = await fetch(`${base}/graphiql/auth/login`, { redirect: "manual" });
+  await t.test("/auth/login is reachable and redirects to the discovered authorization endpoint", async () => {
+    const res = await fetch(`${base}/auth/login`, { redirect: "manual" });
     assert.equal(res.status, 302);
     assert.match(res.headers.get("location"), new RegExp(`^${idp.issuer.replace(/[.]/g, "\\.")}/protocol/openid-connect/auth\\?`));
   });
 
-  await t.test("/graphiql/auth/callback surfaces a failed token exchange as a 400", async () => {
+  await t.test("/auth/callback surfaces a failed token exchange as a 400", async () => {
     idp.setTokenMode("error");
     try {
-      const loginRes = await fetch(`${base}/graphiql/auth/login`, { redirect: "manual" });
+      const loginRes = await fetch(`${base}/auth/login`, { redirect: "manual" });
       const flowCookie = loginRes.headers.get("set-cookie").split(";")[0];
       const state = new URL(loginRes.headers.get("location")).searchParams.get("state");
 
-      const res = await fetch(`${base}/graphiql/auth/callback?code=abc&state=${state}`, {
+      const res = await fetch(`${base}/auth/callback?code=abc&state=${state}`, {
         headers: { cookie: flowCookie },
         redirect: "manual",
       });
@@ -77,11 +77,11 @@ test("server.js-shaped wiring: auth enabled", async (t) => {
   });
 
   await t.test("full login round trip: /auth/session and /graphql reflect the session, /auth/logout tears it down", async () => {
-    const loginRes = await fetch(`${base}/graphiql/auth/login`, { redirect: "manual" });
+    const loginRes = await fetch(`${base}/auth/login`, { redirect: "manual" });
     const flowCookie = loginRes.headers.get("set-cookie").split(";")[0];
     const state = new URL(loginRes.headers.get("location")).searchParams.get("state");
 
-    const callbackRes = await fetch(`${base}/graphiql/auth/callback?code=abc&state=${state}`, {
+    const callbackRes = await fetch(`${base}/auth/callback?code=abc&state=${state}`, {
       headers: { cookie: flowCookie },
       redirect: "manual",
     });
@@ -93,19 +93,19 @@ test("server.js-shaped wiring: auth enabled", async (t) => {
       .find((c) => c.includes("zendro_giql_session"))
       .split(";")[0];
 
-    const sessionRes = await fetch(`${base}/graphiql/auth/session`, { headers: { cookie: sessionCookie } });
+    const sessionRes = await fetch(`${base}/auth/session`, { headers: { cookie: sessionCookie } });
     assert.deepEqual(await sessionRes.json(), { authenticated: true });
 
     const graphqlRes = await fetch(`${base}/graphql`, { headers: { cookie: sessionCookie } });
     assert.equal((await graphqlRes.json()).authHeader, "Bearer fake-access-token-for-authorization_code");
 
-    const logoutRes = await fetch(`${base}/graphiql/auth/logout`, { headers: { cookie: sessionCookie }, redirect: "manual" });
+    const logoutRes = await fetch(`${base}/auth/logout`, { headers: { cookie: sessionCookie }, redirect: "manual" });
     assert.equal(logoutRes.status, 302);
     const logoutLocation = new URL(logoutRes.headers.get("location"));
     assert.equal(logoutLocation.origin + logoutLocation.pathname, `${idp.issuer}/protocol/openid-connect/logout`);
     assert.match(logoutRes.headers.get("set-cookie"), /zendro_giql_session=;/);
 
-    const afterLogoutRes = await fetch(`${base}/graphiql/auth/session`, { headers: { cookie: sessionCookie } });
+    const afterLogoutRes = await fetch(`${base}/auth/session`, { headers: { cookie: sessionCookie } });
     assert.deepEqual(await afterLogoutRes.json(), { authenticated: false });
   });
 });
@@ -115,20 +115,20 @@ test("server.js-shaped wiring: acting as an auth backend for a proxied graphiql-
   t.after(() => idp.close());
 
   const server = await startServer({
-    GRAPHIQL_AUTH_ENABLED: true,
+    AUTH_ENABLED: true,
     OAUTH2_GRAPHIQL_CLIENT_ID: "zendro_graphiql",
     OAUTH2_GRAPHIQL_CLIENT_SECRET: "test-secret",
     OAUTH2_GRAPHIQL_ISSUER_URI: idp.issuer,
-    // GRAPHIQL_REDIRECT_URI doubles as the allowlist of origins this
-    // instance will run login/logout on behalf of - see server.js.
-    GRAPHIQL_REDIRECT_URI: ["http://localhost:0/graphiql/auth/callback", "http://giql.example/*"],
+    // AUTH_REDIRECT_URI doubles as the allowlist of origins this instance
+    // will run login/logout on behalf of - see server.js.
+    AUTH_REDIRECT_URI: ["http://localhost:0/auth/callback", "http://giql.example/*"],
     SESSION_SECRET: "session-secret",
   });
   const base = `http://localhost:${server.address().port}`;
   t.after(() => closeServer(server));
 
-  await t.test("/graphiql/auth/login honors the header for an allowlisted origin", async () => {
-    const res = await fetch(`${base}/graphiql/auth/login`, {
+  await t.test("/auth/login honors the header for an allowlisted origin", async () => {
+    const res = await fetch(`${base}/auth/login`, {
       redirect: "manual",
       headers: { "x-zendro-auth-redirect-uri": "http://giql.example/auth/callback" },
     });
@@ -138,14 +138,14 @@ test("server.js-shaped wiring: acting as an auth backend for a proxied graphiql-
   });
 
   await t.test("full round trip on behalf of the proxied origin redirects back there, not to /graphiql", async () => {
-    const loginRes = await fetch(`${base}/graphiql/auth/login`, {
+    const loginRes = await fetch(`${base}/auth/login`, {
       redirect: "manual",
       headers: { "x-zendro-auth-redirect-uri": "http://giql.example/auth/callback" },
     });
     const flowCookie = loginRes.headers.get("set-cookie").split(";")[0];
     const state = new URL(loginRes.headers.get("location")).searchParams.get("state");
 
-    const callbackRes = await fetch(`${base}/graphiql/auth/callback?code=abc&state=${state}`, {
+    const callbackRes = await fetch(`${base}/auth/callback?code=abc&state=${state}`, {
       headers: { cookie: flowCookie },
       redirect: "manual",
     });
@@ -156,9 +156,9 @@ test("server.js-shaped wiring: acting as an auth backend for a proxied graphiql-
 
 test("server.js-shaped wiring: everything disabled (the .env.example default)", async (t) => {
   const server = await startServer({
-    GRAPHIQL_AUTH_ENABLED: false,
+    AUTH_ENABLED: false,
     GRAPHIQL_FILTER_ENABLED: false,
-    GRAPHIQL_REDIRECT_URI: ["http://localhost:0/graphiql/auth/callback"],
+    AUTH_REDIRECT_URI: ["http://localhost:0/auth/callback"],
   });
   const base = `http://localhost:${server.address().port}`;
   t.after(() => closeServer(server));
@@ -169,8 +169,8 @@ test("server.js-shaped wiring: everything disabled (the .env.example default)", 
     assert.match(html, /"filter":\{"enabled":false\}/);
   });
 
-  await t.test("/graphiql/auth/login 404s when auth is disabled", async () => {
-    const res = await fetch(`${base}/graphiql/auth/login`, { redirect: "manual" });
+  await t.test("/auth/login 404s when auth is disabled", async () => {
+    const res = await fetch(`${base}/auth/login`, { redirect: "manual" });
     assert.equal(res.status, 404);
   });
 

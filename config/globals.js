@@ -27,7 +27,7 @@ const MIGRATION_PASSWORD = process.env.MIGRATION_PASSWORD;
 
 // GraphiQL's own OAuth2 login (see zendro-graphiql) - a separate,
 // confidential Keycloak client from OAUTH2_CLIENT_ID above (the resource
-// server client), only required when GRAPHIQL_AUTH_ENABLED is true.
+// server client), only required when AUTH_ENABLED is true.
 const OAUTH2_GRAPHIQL_CLIENT_ID =
   process.env.OAUTH2_GRAPHIQL_CLIENT_ID || "zendro_graphiql";
 const OAUTH2_GRAPHIQL_CLIENT_SECRET = process.env.OAUTH2_GRAPHIQL_CLIENT_SECRET;
@@ -64,9 +64,11 @@ if (!OAUTH2_TOKEN_URI || !OAUTH2_CLIENT_ID || !OAUTH2_PUBLIC_KEY) {
  * Optional variables with sensible defaults
  */
 
-// Graphiql endpoint
-const GRAPHIQL_REDIRECT_URI = process.env.GRAPHIQL_REDIRECT_URI
-  ? process.env.GRAPHIQL_REDIRECT_URI.split(",")
+// Zendro auth backend endpoint (see zendro-graphiql's authRouter()) - the
+// first entry is this server's own redirect_uri, the rest (if any) are
+// other origins this server is willing to run login/logout on behalf of.
+const AUTH_REDIRECT_URI = process.env.AUTH_REDIRECT_URI
+  ? process.env.AUTH_REDIRECT_URI.split(",")
   : ["http://localhost:7070/*"];
 
 // SPA enpoint
@@ -74,8 +76,8 @@ const SPA_REDIRECT_URI = process.env.SPA_REDIRECT_URI
   ? process.env.SPA_REDIRECT_URI.split(",")
   : ["http://localhost:8080/*"];
 
-// GraphiQL feature flags - both off unless explicitly enabled, see zendro-graphiql
-const GRAPHIQL_AUTH_ENABLED = process.env.GRAPHIQL_AUTH_ENABLED === "true";
+// GraphiQL/auth feature flags - both off unless explicitly enabled, see zendro-graphiql
+const AUTH_ENABLED = process.env.AUTH_ENABLED === "true";
 const GRAPHIQL_FILTER_ENABLED = process.env.GRAPHIQL_FILTER_ENABLED === "true";
 
 // Listening port
@@ -129,10 +131,10 @@ const config = {
   OAUTH2_GRAPHIQL_ISSUER_URI,
   OAUTH2_GRAPHIQL_ISSUER_INTERNAL_URI,
   SESSION_SECRET,
-  GRAPHIQL_AUTH_ENABLED,
+  AUTH_ENABLED,
   GRAPHIQL_FILTER_ENABLED,
   DOWN_MIGRATION,
-  GRAPHIQL_REDIRECT_URI,
+  AUTH_REDIRECT_URI,
   SPA_REDIRECT_URI,
   MIGRATION_USERNAME,
   MIGRATION_PASSWORD,

@@ -13,7 +13,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const express = require("express");
 const cors = require("cors");
-const GraphiQL = require("zendro-graphiql");
+const { GraphiQL, authRouter, attachAuthFromSession } = require("zendro-graphiql");
 const { buildGraphiqlOptions, closeServer } = require("./../helpers/graphiqlServer");
 
 const ISSUER_URI = process.env.OAUTH2_GRAPHIQL_ISSUER_URI;
@@ -23,10 +23,10 @@ const ISSUER_INTERNAL_URI = process.env.OAUTH2_GRAPHIQL_ISSUER_INTERNAL_URI;
 const CLIENT_ID = process.env.OAUTH2_GRAPHIQL_CLIENT_ID || "zendro_graphiql";
 const CLIENT_SECRET = process.env.OAUTH2_GRAPHIQL_CLIENT_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET || "live-test-session-secret";
-// A concrete callback URL - GRAPHIQL_REDIRECT_URI (config/globals.js) holds
+// A concrete callback URL - AUTH_REDIRECT_URI (config/globals.js) holds
 // registration *patterns* (e.g. "http://localhost:7070/*"), not something
 // that can be sent as the literal redirect_uri parameter.
-const REDIRECT_URI = process.env.GRAPHIQL_LIVE_TEST_REDIRECT_URI || "http://localhost:7070/graphiql/auth/callback";
+const REDIRECT_URI = process.env.GRAPHIQL_LIVE_TEST_REDIRECT_URI || "http://localhost:7070/auth/callback";
 // A user that already exists in the realm - see utils/setup-keycloak.js
 // (createDefaultUser), overridable for other setups.
 const TEST_USERNAME = process.env.TEST_USERNAME || "zendro-admin";
@@ -101,18 +101,19 @@ test("live login against a real Keycloak", { skip: !ISSUER_URI || !CLIENT_SECRET
   // the Keycloak client) - so, unlike the mocked suite, this server can't
   // bind an ephemeral port; it must listen on that exact port.
   const graphiqlOptions = buildGraphiqlOptions({
-    GRAPHIQL_AUTH_ENABLED: true,
+    AUTH_ENABLED: true,
     OAUTH2_GRAPHIQL_CLIENT_ID: CLIENT_ID,
     OAUTH2_GRAPHIQL_CLIENT_SECRET: CLIENT_SECRET,
     OAUTH2_GRAPHIQL_ISSUER_URI: ISSUER_URI,
     OAUTH2_GRAPHIQL_ISSUER_INTERNAL_URI: ISSUER_INTERNAL_URI,
-    GRAPHIQL_REDIRECT_URI: [REDIRECT_URI],
+    AUTH_REDIRECT_URI: [REDIRECT_URI],
     SESSION_SECRET,
     GRAPHIQL_FILTER_ENABLED: false,
   });
   const app = express();
   app.use("/graphiql", GraphiQL(graphiqlOptions));
-  const attachGraphiqlSession = GraphiQL.attachAuthFromSession(graphiqlOptions);
+  app.use("/auth", authRouter(graphiqlOptions));
+  const attachGraphiqlSession = attachAuthFromSession(graphiqlOptions);
   app.all("/graphql", cors(), attachGraphiqlSession, (req, res) => res.json({ authHeader: req.headers.authorization || null }));
 
   const port = Number(new URL(REDIRECT_URI).port) || 80;
@@ -125,7 +126,7 @@ test("live login against a real Keycloak", { skip: !ISSUER_URI || !CLIENT_SECRET
 
   await t.test("full round trip: /auth/login -> real Keycloak login -> /auth/callback -> session authenticates /graphql", async () => {
     const appJar = {};
-    const loginRes = await fetch(`${base}/graphiql/auth/login`, { redirect: "manual" });
+    const loginRes = await fetch(`${base}/auth/login`, { redirect: "manual" });
     absorbSetCookie(appJar, loginRes);
     const authorizeUrl = loginRes.headers.get("location");
     assert.ok(authorizeUrl?.startsWith(ISSUER_URI), "expected /auth/login to redirect into the configured Keycloak realm");

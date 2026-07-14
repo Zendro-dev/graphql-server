@@ -1,7 +1,7 @@
 const axios = require("axios");
 /** ENV */
 const {
-  GRAPHIQL_REDIRECT_URI,
+  AUTH_REDIRECT_URI,
   SPA_REDIRECT_URI,
   OAUTH2_TOKEN_URI,
 } = require("../config/globals");
@@ -348,8 +348,8 @@ async function setupKeyCloak() {
   });
   const KEYCLOAK_GIQL_CLIENT_SECRET = await registerClient(token, {
     clientId: KEYCLOAK_GIQL_CLIENT,
-    redirectUris: GRAPHIQL_REDIRECT_URI,
-    attributes: {"post.logout.redirect.uris": GRAPHIQL_REDIRECT_URI[0]},
+    redirectUris: AUTH_REDIRECT_URI,
+    attributes: {"post.logout.redirect.uris": AUTH_REDIRECT_URI[0]},
     publicClient: false,
   });
   const KEYCLOAK_SPA_CLIENT_SECRET = await registerClient(token, {

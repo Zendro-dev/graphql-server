@@ -4,20 +4,21 @@
 // server.js (this repo checkout has no generated resolvers/schemas).
 const express = require("express");
 const cors = require("cors");
-const GraphiQL = require("zendro-graphiql");
+const { GraphiQL, authRouter, attachAuthFromSession } = require("zendro-graphiql");
 
 function buildGraphiqlOptions(globals) {
   return {
     features: {
       auth: {
-        enabled: globals.GRAPHIQL_AUTH_ENABLED,
+        enabled: globals.AUTH_ENABLED,
         clientId: globals.OAUTH2_GRAPHIQL_CLIENT_ID,
         clientSecret: globals.OAUTH2_GRAPHIQL_CLIENT_SECRET,
         issuerUri: globals.OAUTH2_GRAPHIQL_ISSUER_URI,
         issuerInternalUri: globals.OAUTH2_GRAPHIQL_ISSUER_INTERNAL_URI,
-        redirectUri: globals.GRAPHIQL_REDIRECT_URI[0],
-        allowedRedirectUris: globals.GRAPHIQL_REDIRECT_URI,
+        redirectUri: globals.AUTH_REDIRECT_URI[0],
+        allowedRedirectUris: globals.AUTH_REDIRECT_URI,
         sessionSecret: globals.SESSION_SECRET,
+        postLoginRedirectTo: "/graphiql",
       },
       filter: { enabled: globals.GRAPHIQL_FILTER_ENABLED },
     },
@@ -28,8 +29,9 @@ function startServer(globals) {
   const graphiqlOptions = buildGraphiqlOptions(globals);
   const app = express();
   app.use("/graphiql", GraphiQL(graphiqlOptions));
+  app.use("/auth", authRouter(graphiqlOptions));
 
-  const attachGraphiqlSession = GraphiQL.attachAuthFromSession(graphiqlOptions);
+  const attachGraphiqlSession = attachAuthFromSession(graphiqlOptions);
   app.all("/graphql", cors(), attachGraphiqlSession, (req, res) =>
     res.json({ authHeader: req.headers.authorization || null })
   );
