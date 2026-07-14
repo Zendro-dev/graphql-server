@@ -8,61 +8,23 @@
 //
 // zendro-graphiql's own test suite (zendro-graphiql/test/) covers the
 // router/middleware/session logic in isolation; this file only covers the
-// integration seam that lives in server.js.
+// integration seam that lives in server.js, against a fake OpenID Provider.
+// See test/extra/live-login.test.js for the same seam exercised against a
+// real, running Keycloak.
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const express = require("express");
-const cors = require("cors");
-const GraphiQL = require("zendro-graphiql");
-
-function buildGraphiqlOptions(globals) {
-  return {
-    features: {
-      auth: {
-        enabled: globals.GRAPHIQL_AUTH_ENABLED,
-        clientId: globals.OAUTH2_GRAPHIQL_CLIENT_ID,
-        clientSecret: globals.OAUTH2_GRAPHIQL_CLIENT_SECRET,
-        authorizationUri: globals.OAUTH2_AUTHORIZATION_URI,
-        tokenUri: globals.OAUTH2_TOKEN_URI,
-        logoutUri: globals.OAUTH2_LOGOUT_URI,
-        redirectUri: globals.GRAPHIQL_REDIRECT_URI[0],
-        sessionSecret: globals.SESSION_SECRET,
-      },
-      filter: { enabled: globals.GRAPHIQL_FILTER_ENABLED },
-    },
-  };
-}
-
-function startServer(globals) {
-  const graphiqlOptions = buildGraphiqlOptions(globals);
-  const app = express();
-  app.use("/graphiql", GraphiQL(graphiqlOptions));
-
-  const attachGraphiqlSession = GraphiQL.attachAuthFromSession(graphiqlOptions);
-  app.all("/graphql", cors(), attachGraphiqlSession, (req, res) =>
-    res.json({ authHeader: req.headers.authorization || null })
-  );
-  app.post("/meta_query", cors(), attachGraphiqlSession, (req, res) =>
-    res.json({ authHeader: req.headers.authorization || null })
-  );
-
-  return new Promise((resolve) => {
-    const server = app.listen(0, () => resolve(server));
-  });
-}
-
-function closeServer(server) {
-  return new Promise((resolve) => server.close(resolve));
-}
+const { startFakeIdp } = require("./helpers/fakeIdp");
+const { startServer, closeServer } = require("./helpers/graphiqlServer");
 
 test("server.js-shaped wiring: auth enabled", async (t) => {
+  const idp = await startFakeIdp();
+  t.after(() => idp.close());
+
   const server = await startServer({
     GRAPHIQL_AUTH_ENABLED: true,
     OAUTH2_GRAPHIQL_CLIENT_ID: "zendro_graphiql",
     OAUTH2_GRAPHIQL_CLIENT_SECRET: "test-secret",
-    OAUTH2_AUTHORIZATION_URI: "http://keycloak.example/auth",
-    OAUTH2_TOKEN_URI: "http://keycloak.example/token",
-    OAUTH2_LOGOUT_URI: "http://keycloak.example/logout",
+    OAUTH2_GRAPHIQL_ISSUER_URI: idp.issuer,
     GRAPHIQL_REDIRECT_URI: ["http://localhost:0/graphiql/auth/callback"],
     SESSION_SECRET: "session-secret",
     GRAPHIQL_FILTER_ENABLED: true,
@@ -91,10 +53,60 @@ test("server.js-shaped wiring: auth enabled", async (t) => {
     assert.deepEqual(await res.json(), { authHeader: null });
   });
 
-  await t.test("/graphiql/auth/login is reachable and redirects to the authorization endpoint", async () => {
+  await t.test("/graphiql/auth/login is reachable and redirects to the discovered authorization endpoint", async () => {
     const res = await fetch(`${base}/graphiql/auth/login`, { redirect: "manual" });
     assert.equal(res.status, 302);
-    assert.match(res.headers.get("location"), /^http:\/\/keycloak\.example\/auth\?/);
+    assert.match(res.headers.get("location"), new RegExp(`^${idp.issuer.replace(/[.]/g, "\\.")}/protocol/openid-connect/auth\\?`));
+  });
+
+  await t.test("/graphiql/auth/callback surfaces a failed token exchange as a 400", async () => {
+    idp.setTokenMode("error");
+    try {
+      const loginRes = await fetch(`${base}/graphiql/auth/login`, { redirect: "manual" });
+      const flowCookie = loginRes.headers.get("set-cookie").split(";")[0];
+      const state = new URL(loginRes.headers.get("location")).searchParams.get("state");
+
+      const res = await fetch(`${base}/graphiql/auth/callback?code=abc&state=${state}`, {
+        headers: { cookie: flowCookie },
+        redirect: "manual",
+      });
+      assert.equal(res.status, 400);
+    } finally {
+      idp.setTokenMode("ok");
+    }
+  });
+
+  await t.test("full login round trip: /auth/session and /graphql reflect the session, /auth/logout tears it down", async () => {
+    const loginRes = await fetch(`${base}/graphiql/auth/login`, { redirect: "manual" });
+    const flowCookie = loginRes.headers.get("set-cookie").split(";")[0];
+    const state = new URL(loginRes.headers.get("location")).searchParams.get("state");
+
+    const callbackRes = await fetch(`${base}/graphiql/auth/callback?code=abc&state=${state}`, {
+      headers: { cookie: flowCookie },
+      redirect: "manual",
+    });
+    assert.equal(callbackRes.status, 302);
+    assert.equal(callbackRes.headers.get("location"), "/graphiql");
+    const sessionCookie = callbackRes.headers
+      .get("set-cookie")
+      .split(",")
+      .find((c) => c.includes("zendro_giql_session"))
+      .split(";")[0];
+
+    const sessionRes = await fetch(`${base}/graphiql/auth/session`, { headers: { cookie: sessionCookie } });
+    assert.deepEqual(await sessionRes.json(), { authenticated: true });
+
+    const graphqlRes = await fetch(`${base}/graphql`, { headers: { cookie: sessionCookie } });
+    assert.equal((await graphqlRes.json()).authHeader, "Bearer fake-access-token-for-authorization_code");
+
+    const logoutRes = await fetch(`${base}/graphiql/auth/logout`, { headers: { cookie: sessionCookie }, redirect: "manual" });
+    assert.equal(logoutRes.status, 302);
+    const logoutLocation = new URL(logoutRes.headers.get("location"));
+    assert.equal(logoutLocation.origin + logoutLocation.pathname, `${idp.issuer}/protocol/openid-connect/logout`);
+    assert.match(logoutRes.headers.get("set-cookie"), /zendro_giql_session=;/);
+
+    const afterLogoutRes = await fetch(`${base}/graphiql/auth/session`, { headers: { cookie: sessionCookie } });
+    assert.deepEqual(await afterLogoutRes.json(), { authenticated: false });
   });
 });
 

@@ -8,6 +8,7 @@
     "dev": "nodemon --ignore 'zendro_migration*.json' server.js",
     "test": "mocha test/test.js --exit",
     "test:graphiql": "node --test test/graphiql.test.js",
+    "test:live": "node --test \"test/extra/**/*.test.js\"",
     "build:graphiql": "npm --prefix zendro-graphiql run build"
   },
   "author": "vsuaste",
