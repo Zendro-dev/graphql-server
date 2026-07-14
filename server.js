@@ -1,7 +1,8 @@
 var express = require("express");
 var path = require("path");
 var { createHandler } = require("graphql-http/lib/use/express");
-const { GraphiQL, authRouter, attachAuthFromSession } = require("zendro-graphiql");
+const GraphiQL = require("zendro-graphiql");
+const { authRouter, attachAuthFromSession } = require("./utils/auth");
 const bodyParser = require("body-parser");
 const globals = require("./config/globals");
 const execute = require("graphql/execution/execute");
@@ -96,42 +97,45 @@ app.get("/help", (req, res) => {
   res.json(helpObj);
 });
 
-/* Serve the built GraphiQL SPA (see zendro-graphiql/, run `npm run build:graphiql`) */
+/* Serve the built GraphiQL SPA (see zendro-graphiql/, run `npm run build:graphiql`) -
+   zendro-graphiql only ever needs to know whether to show the auth button/
+   filter panel, nothing more; it holds no credentials and runs no auth
+   logic of its own. */
 const graphiqlOptions = {
   features: {
-    auth: {
-      enabled: globals.AUTH_ENABLED,
-      clientId: globals.OAUTH2_GRAPHIQL_CLIENT_ID,
-      clientSecret: globals.OAUTH2_GRAPHIQL_CLIENT_SECRET,
-      issuerUri: globals.OAUTH2_GRAPHIQL_ISSUER_URI,
-      issuerInternalUri: globals.OAUTH2_GRAPHIQL_ISSUER_INTERNAL_URI,
-      redirectUri: globals.AUTH_REDIRECT_URI[0],
-      // Lets a trusted external GraphiQL deployment (e.g. graphiql-auth,
-      // proxying /auth/* here rather than holding its own Keycloak
-      // credentials) run login/logout on behalf of its own origin - see
-      // zendro-graphiql's README, "Acting as an auth backend for other
-      // origins". Reuses the same patterns already registered on the
-      // Keycloak client, rather than a second, independently-maintained list.
-      allowedRedirectUris: globals.AUTH_REDIRECT_URI,
-      sessionSecret: globals.SESSION_SECRET,
-      // authRouter() no longer knows where GraphiQL() is mounted (they're
-      // independently mountable) - a direct, non-proxied login through this
-      // server's own /auth should still land back on its own GraphiQL editor.
-      postLoginRedirectTo: "/graphiql",
-    },
-    filter: { enabled: globals.GRAPHIQL_FILTER_ENABLED },
+    auth: globals.AUTH_ENABLED,
+    filter: globals.GRAPHIQL_FILTER_ENABLED,
   },
 };
 app.use("/graphiql", GraphiQL(graphiqlOptions));
 
-/* The Zendro auth backend (login/callback/session/logout) - a fixed,
-   top-level path, independent of wherever /graphiql itself is mounted. See
-   zendro-graphiql's README for why this isn't nested under /graphiql. */
-app.use("/auth", authRouter(graphiqlOptions));
+/* The Zendro auth backend (login/callback/session/logout) - implemented
+   directly in this server (see utils/auth/), not by an imported library:
+   this is the only service that ever runs it. A fixed, top-level path,
+   independent of wherever /graphiql itself is mounted. */
+const authConfig = {
+  enabled: globals.AUTH_ENABLED,
+  clientId: globals.OAUTH2_GRAPHIQL_CLIENT_ID,
+  clientSecret: globals.OAUTH2_GRAPHIQL_CLIENT_SECRET,
+  issuerUri: globals.OAUTH2_GRAPHIQL_ISSUER_URI,
+  issuerInternalUri: globals.OAUTH2_GRAPHIQL_ISSUER_INTERNAL_URI,
+  redirectUri: globals.AUTH_REDIRECT_URI[0],
+  // Lets a trusted external GraphiQL deployment (e.g. graphiql-auth,
+  // proxying /auth/* here rather than holding its own Keycloak
+  // credentials) run login/logout on behalf of its own origin. Reuses the
+  // same patterns already registered on the Keycloak client, rather than a
+  // second, independently-maintained list.
+  allowedRedirectUris: globals.AUTH_REDIRECT_URI,
+  sessionSecret: globals.SESSION_SECRET,
+  // A direct, non-proxied login through this server's own /auth should
+  // still land back on its own GraphiQL editor.
+  postLoginRedirectTo: "/graphiql",
+};
+app.use("/auth", authRouter(authConfig));
 
-/* A logged-in session (see zendro-graphiql) transparently authenticates
-   these routes too, without overriding an explicit Authorization header. */
-const attachGraphiqlSession = attachAuthFromSession(graphiqlOptions);
+/* A logged-in session transparently authenticates these routes too,
+   without overriding an explicit Authorization header. */
+const attachGraphiqlSession = attachAuthFromSession(authConfig);
 
 /*request is passed as context by default  */
 app.all(

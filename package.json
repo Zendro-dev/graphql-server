@@ -8,6 +8,7 @@
     "dev": "nodemon --ignore 'zendro_migration*.json' server.js",
     "test": "mocha test/test.js --exit",
     "test:graphiql": "node --test test/graphiql.test.js",
+    "test:auth": "node --test test/utils/**/*.test.js",
     "test:live": "node --test \"test/extra/**/*.test.js\"",
     "build:graphiql": "npm --prefix zendro-graphiql run build"
   },
@@ -38,6 +39,7 @@
     "node-jq": "^6.3.1",
     "nodemailer": "^9.0.3",
     "nodemailer-smtp-transport": "=2.4.2",
+    "openid-client": "^6.8.4",
     "presto-client": "^1.2.0",
     "sequelize": "^6.37.8",
     "sqlite3": "^6.0.1",

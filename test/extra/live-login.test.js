@@ -13,8 +13,9 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const express = require("express");
 const cors = require("cors");
-const { GraphiQL, authRouter, attachAuthFromSession } = require("zendro-graphiql");
-const { buildGraphiqlOptions, closeServer } = require("./../helpers/graphiqlServer");
+const GraphiQL = require("zendro-graphiql");
+const { authRouter, attachAuthFromSession } = require("../../utils/auth");
+const { buildGraphiqlOptions, buildAuthConfig, closeServer } = require("./../helpers/graphiqlServer");
 
 const ISSUER_URI = process.env.OAUTH2_GRAPHIQL_ISSUER_URI;
 // Only needed when ISSUER_URI isn't reachable from here directly (e.g. a
@@ -100,7 +101,7 @@ test("live login against a real Keycloak", { skip: !ISSUER_URI || !CLIENT_SECRET
   // redirect_uri has a fixed port baked in (must match what's registered on
   // the Keycloak client) - so, unlike the mocked suite, this server can't
   // bind an ephemeral port; it must listen on that exact port.
-  const graphiqlOptions = buildGraphiqlOptions({
+  const liveGlobals = {
     AUTH_ENABLED: true,
     OAUTH2_GRAPHIQL_CLIENT_ID: CLIENT_ID,
     OAUTH2_GRAPHIQL_CLIENT_SECRET: CLIENT_SECRET,
@@ -109,11 +110,13 @@ test("live login against a real Keycloak", { skip: !ISSUER_URI || !CLIENT_SECRET
     AUTH_REDIRECT_URI: [REDIRECT_URI],
     SESSION_SECRET,
     GRAPHIQL_FILTER_ENABLED: false,
-  });
+  };
+  const graphiqlOptions = buildGraphiqlOptions(liveGlobals);
+  const authConfig = buildAuthConfig(liveGlobals);
   const app = express();
   app.use("/graphiql", GraphiQL(graphiqlOptions));
-  app.use("/auth", authRouter(graphiqlOptions));
-  const attachGraphiqlSession = attachAuthFromSession(graphiqlOptions);
+  app.use("/auth", authRouter(authConfig));
+  const attachGraphiqlSession = attachAuthFromSession(authConfig);
   app.all("/graphql", cors(), attachGraphiqlSession, (req, res) => res.json({ authHeader: req.headers.authorization || null }));
 
   const port = Number(new URL(REDIRECT_URI).port) || 80;

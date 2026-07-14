@@ -1,12 +1,13 @@
-// Mirrors server.js's exact GraphiQL wiring (same require, same option
-// shape, same middleware order on /graphql and /meta_query) against the
-// real installed zendro-graphiql package. Deliberately doesn't boot the
-// full server.js: this repo checkout has no generated resolvers/schemas
-// (produced by a separate Zendro code-gen step), and that generated layer
-// is orthogonal to what's being verified here - that server.js wires the
-// GraphiQL router, auth router, and session middleware together correctly.
+// Mirrors server.js's exact wiring (same requires, same option shapes, same
+// middleware order on /graphql and /meta_query) against the real installed
+// zendro-graphiql package and this repo's own utils/auth. Deliberately
+// doesn't boot the full server.js: this repo checkout has no generated
+// resolvers/schemas (produced by a separate Zendro code-gen step), and that
+// generated layer is orthogonal to what's being verified here - that
+// server.js wires the GraphiQL SPA, auth router, and session middleware
+// together correctly.
 //
-// zendro-graphiql's own test suite (zendro-graphiql/test/) covers the
+// utils/auth's own test suite (test/utils/auth.test.js) covers the
 // router/middleware/session logic in isolation; this file only covers the
 // integration seam that lives in server.js, against a fake OpenID Provider.
 // See test/extra/live-login.test.js for the same seam exercised against a
