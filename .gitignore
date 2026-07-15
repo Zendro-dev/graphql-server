@@ -1,6 +1,7 @@
 # NPM package manager temporary files and folders
 node_modules
 npm-debug.log
+.npm-cache
 
 # ModelGen output folders
 seeders
