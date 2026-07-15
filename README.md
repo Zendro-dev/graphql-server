@@ -57,6 +57,8 @@ This server is the only service in a Zendro deployment that talks to Keycloak di
 * **`/graphiql`** - the [GraphiQL](https://github.com/graphql/graphiql) IDE, served from the `zendro-graphiql` submodule (`git submodule update --init` then `npm run build:graphiql` to build it). It's purely a UI: it renders a login button and an optional jq/JSONPath filter panel, but holds no credentials itself.
 * **`/auth`** - the actual OAuth2 Authorization Code + PKCE flow against Keycloak, implemented directly in this repo (`utils/auth/`), independent of `/graphiql` - `/graphql`'s and `/meta_query`'s own session middleware depend on it too, and a separate GraphiQL deployment with no Keycloak credentials of its own (like [`graphiql-auth`](https://github.com/Zendro-dev/graphiql-auth)) reverse-proxies to it. See "Acting as an auth backend for other origins" below.
 
+`/auth` exposes `GET /auth/login`, `/auth/callback`, `/auth/session` (`{authenticated: boolean}`), `/auth/logout`, and `GET /auth/permissions` - the last resolves a logged-in session's Keycloak roles into `{ [modelName]: ("create"|"read"|"update"|"delete"|"*")[] }`, using a fixed default role map (`administrator`: `*`, `editor`: create/update/delete, `reader`: read) applied across every model this server knows about. It's a session-only endpoint (401 without one, or an explicit `Authorization` header) - there's no per-model or per-role configurability yet, see `utils/auth/permissions.js`.
+
 ### Auth environment variables
 
 * `AUTH_ENABLED` - Enables the `/auth` router and the login button on `/graphiql`. Defaults to `false`.

@@ -11,33 +11,59 @@ const http = require("node:http");
 // jwks_uri dynamically reflect whatever address actually reached it - the
 // discovery document is only ever served correctly to whoever fetches it
 // from this fake server's own (internal) address.
-async function startFakeIdp({ publicIssuer } = {}) {
+// accessTokenRoles: when set (e.g. { "zendro_graphql-server": { roles: ["administrator"] } },
+// matching Keycloak's real resource_access shape),
+// the token endpoint mints a *real* signed JWT access token carrying that
+// resource_access claim, instead of the default opaque
+// "fake-access-token-for-<grant_type>" string - needed to exercise
+// utils/roles.js-based role decoding (see utils/auth/permissions.js)
+// end-to-end. Left off by default so every other existing test (asserting
+// on the literal opaque string) is unaffected.
+async function startFakeIdp({ publicIssuer, accessTokenRoles } = {}) {
   const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
   const kid = "test-key-1";
   const jwk = publicKey.export({ format: "jwk" });
   jwk.kid = kid;
   jwk.alg = "RS256";
   jwk.use = "sig";
+  const publicKeyPem = publicKey.export({ type: "spki", format: "pem" });
 
   let issuer;
   let tokenMode = "ok"; // "ok" | "error"
   const tokenRequests = [];
 
-  function signIdToken(clientId) {
+  function signJwt(payload) {
     const header = { alg: "RS256", typ: "JWT", kid };
+    const encHeader = Buffer.from(JSON.stringify(header)).toString("base64url");
+    const encPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+    const signature = crypto.sign("RSA-SHA256", Buffer.from(`${encHeader}.${encPayload}`), privateKey);
+    return `${encHeader}.${encPayload}.${signature.toString("base64url")}`;
+  }
+
+  function signIdToken(clientId) {
     const now = Math.floor(Date.now() / 1000);
-    const payload = {
+    return signJwt({
       iss: publicIssuer || issuer,
       aud: clientId,
       sub: "test-user-id",
       preferred_username: "test-user",
       iat: now,
       exp: now + 300,
-    };
-    const encHeader = Buffer.from(JSON.stringify(header)).toString("base64url");
-    const encPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
-    const signature = crypto.sign("RSA-SHA256", Buffer.from(`${encHeader}.${encPayload}`), privateKey);
-    return `${encHeader}.${encPayload}.${signature.toString("base64url")}`;
+    });
+  }
+
+  function signAccessToken(clientId, grantType) {
+    if (!accessTokenRoles) return `fake-access-token-for-${grantType}`;
+    const now = Math.floor(Date.now() / 1000);
+    return signJwt({
+      iss: publicIssuer || issuer,
+      aud: clientId,
+      sub: "test-user-id",
+      preferred_username: "test-user",
+      resource_access: accessTokenRoles,
+      iat: now,
+      exp: now + 300,
+    });
   }
 
   const server = http.createServer((req, res) => {
@@ -84,7 +110,7 @@ async function startFakeIdp({ publicIssuer } = {}) {
         }
         res.end(
           JSON.stringify({
-            access_token: `fake-access-token-for-${params.get("grant_type")}`,
+            access_token: signAccessToken(params.get("client_id"), params.get("grant_type")),
             refresh_token: "fake-refresh-token",
             id_token: signIdToken(params.get("client_id")),
             token_type: "Bearer",
@@ -107,6 +133,7 @@ async function startFakeIdp({ publicIssuer } = {}) {
     server,
     issuer,
     tokenRequests,
+    publicKeyPem,
     setTokenMode: (mode) => {
       tokenMode = mode;
     },

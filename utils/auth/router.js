@@ -7,8 +7,11 @@ const {
   readSessionId,
   sessionCookieHeader,
   clearSessionCookieHeader,
+  attachAuthFromSession,
 } = require("./session");
 const { loadClient, getConfiguration } = require("./oidc");
+const { permissionsForToken } = require("./permissions");
+const defaultModels = require("../../models");
 
 // One-time cookie that carries the OAuth `state` and PKCE `code_verifier`
 // across the redirect to the identity provider and back. Short-lived: it
@@ -174,6 +177,28 @@ function createAuthRouter(authConfig) {
     const sessionId = readSessionId(req, authConfig.sessionSecret);
     res.json({ authenticated: Boolean(getSession(sessionId)) });
   });
+
+  // What is this logged-in user allowed to do? The session itself only
+  // ever carries an opaque id (see session.js) - resolving that into
+  // permissions needs the access token, so this route runs through the
+  // same refresh-aware session middleware /graphql and /meta_query use,
+  // rather than reading the session directly like /session above.
+  router.get(
+    "/permissions",
+    attachAuthFromSession(authConfig),
+    (req, res) => {
+      if (!req.headers.authorization) {
+        return res.status(401).json({ errors: [{ message: "Authentication required." }] });
+      }
+      try {
+        const token = req.headers.authorization.replace(/^Bearer\s+/i, "");
+        const models = authConfig.models || defaultModels;
+        res.json(permissionsForToken(token, authConfig, models));
+      } catch {
+        res.status(401).json({ errors: [{ message: "Authentication required." }] });
+      }
+    }
+  );
 
   router.get("/logout", async (req, res, next) => {
     const sessionId = readSessionId(req, authConfig.sessionSecret);

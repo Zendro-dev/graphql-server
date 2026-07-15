@@ -27,6 +27,8 @@ function buildAuthConfig(globals) {
     allowedRedirectUris: globals.AUTH_REDIRECT_URI,
     sessionSecret: globals.SESSION_SECRET,
     postLoginRedirectTo: "/graphiql",
+    oauth2PublicKey: globals.OAUTH2_PUBLIC_KEY,
+    oauth2ClientId: globals.OAUTH2_CLIENT_ID,
   };
 }
 

@@ -130,6 +130,11 @@ const authConfig = {
   // A direct, non-proxied login through this server's own /auth should
   // still land back on its own GraphiQL editor.
   postLoginRedirectTo: "/graphiql",
+  // Used only by /auth/permissions to decode a session's access token into
+  // roles (see utils/roles.js) - the realm's own signing key, not specific
+  // to the OAUTH2_GRAPHIQL_CLIENT_ID this session was created through.
+  oauth2PublicKey: globals.OAUTH2_PUBLIC_KEY,
+  oauth2ClientId: globals.OAUTH2_CLIENT_ID,
 };
 app.use("/auth", authRouter(authConfig));
 
