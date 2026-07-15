@@ -134,6 +134,10 @@ const addConnectionInstances = async () => {
           ? {
               dialect: storageConfig[key].dialect,
               storage: __dirname + "/" + storageConfig[key].storage,
+              // sqlite3 (node-sqlite3) is deprecated/archived; @vscode/sqlite3
+              // is a byte-API-compatible fork Sequelize's sqlite dialect
+              // accepts via dialectModule instead of its default require("sqlite3").
+              dialectModule: require("@vscode/sqlite3"),
             }
           : storageConfig[key];
       const connection = new Sequelize(config);
