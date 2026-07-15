@@ -87,6 +87,27 @@ function sleep(ms) {
 
 
 /**
+ * toOriginWildcard - widens a redirect_uri to "<origin>/*", for registering
+ * as a valid post-logout redirect target. redirect_uris themselves are
+ * exact callback paths (e.g. ".../auth/callback"), but the actual page a
+ * browser lands on after logout is authConfig.postLoginRedirectTo (e.g.
+ * gqs's own "/graphiql") or a proxied frontend's own root - neither of
+ * which is the callback path itself, so registering the raw redirect_uri
+ * here would reject every real logout. An origin-level wildcard covers
+ * both without gqs's server.js and this migration needing to agree on the
+ * exact landing path.
+ *
+ * @param {string} uri a redirect_uri or redirect_uri pattern
+ */
+function toOriginWildcard(uri) {
+  try {
+    return `${new URL(uri).origin}/*`;
+  } catch {
+    return uri;
+  }
+}
+
+/**
  * getMasterToken - get Accesstoken for keycloak rest API
  */
 async function getMasterToken() {
@@ -349,7 +370,8 @@ async function setupKeyCloak() {
   const KEYCLOAK_GIQL_CLIENT_SECRET = await registerClient(token, {
     clientId: KEYCLOAK_GIQL_CLIENT,
     redirectUris: AUTH_REDIRECT_URI,
-    attributes: {"post.logout.redirect.uris": AUTH_REDIRECT_URI[0]},
+    // Keycloak's own multi-value attribute syntax - see toOriginWildcard.
+    attributes: {"post.logout.redirect.uris": AUTH_REDIRECT_URI.map(toOriginWildcard).join("##")},
     publicClient: false,
   });
   const KEYCLOAK_SPA_CLIENT_SECRET = await registerClient(token, {
