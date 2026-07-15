@@ -11,6 +11,11 @@ const http = require("node:http");
 // jwks_uri dynamically reflect whatever address actually reached it - the
 // discovery document is only ever served correctly to whoever fetches it
 // from this fake server's own (internal) address.
+// fixedHostname: simulates Keycloak with a *static* KC_HOSTNAME instead (the
+// common case: needed so the issuer claim stays constant regardless of how
+// Keycloak is reached) - every endpoint, including the server-to-server
+// ones, reports the public origin, even to a caller that reached this fake
+// server via its internal address.
 // accessTokenRoles: when set (e.g. { "zendro_graphql-server": { roles: ["administrator"] } },
 // matching Keycloak's real resource_access shape),
 // the token endpoint mints a *real* signed JWT access token carrying that
@@ -19,7 +24,7 @@ const http = require("node:http");
 // utils/roles.js-based role decoding (see utils/auth/permissions.js)
 // end-to-end. Left off by default so every other existing test (asserting
 // on the literal opaque string) is unaffected.
-async function startFakeIdp({ publicIssuer, accessTokenRoles } = {}) {
+async function startFakeIdp({ publicIssuer, accessTokenRoles, fixedHostname } = {}) {
   const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
   const kid = "test-key-1";
   const jwk = publicKey.export({ format: "jwk" });
@@ -71,14 +76,15 @@ async function startFakeIdp({ publicIssuer, accessTokenRoles } = {}) {
 
     if (url.pathname === "/.well-known/openid-configuration") {
       const frontchannel = publicIssuer || issuer;
+      const backchannel = fixedHostname ? frontchannel : issuer;
       res.setHeader("Content-Type", "application/json");
       return res.end(
         JSON.stringify({
           issuer: frontchannel,
           authorization_endpoint: `${frontchannel}/protocol/openid-connect/auth`,
-          token_endpoint: `${issuer}/protocol/openid-connect/token`,
+          token_endpoint: `${backchannel}/protocol/openid-connect/token`,
           end_session_endpoint: `${frontchannel}/protocol/openid-connect/logout`,
-          jwks_uri: `${issuer}/protocol/openid-connect/certs`,
+          jwks_uri: `${backchannel}/protocol/openid-connect/certs`,
           response_types_supported: ["code"],
           subject_types_supported: ["public"],
           id_token_signing_alg_values_supported: ["RS256"],

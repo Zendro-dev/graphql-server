@@ -297,6 +297,41 @@ test("authConfig.issuerInternalUri: identity provider with a public-only issuer 
   });
 });
 
+test("authConfig.issuerInternalUri: identity provider with a fixed public hostname (e.g. Keycloak with a static KC_HOSTNAME)", async (t) => {
+  // Unlike the dynamic-hostname case above, a *fixed* KC_HOSTNAME (the
+  // common Keycloak setup, since it's what keeps the issuer claim constant
+  // regardless of how Keycloak is reached) means every endpoint in the
+  // discovery document - including the server-to-server ones this process
+  // calls itself - reports the public origin, even when the document itself
+  // was fetched via the internal one. Server-to-server calls must still be
+  // rewritten to the internal origin, or they fail outright since the
+  // public origin isn't reachable from here.
+  // A distinct issuer string from the dynamic-hostname test above -
+  // getConfiguration()'s cache key is issuerUri::clientId, and both tests
+  // otherwise share the same clientId.
+  const publicIssuer = "http://public-keycloak-fixed-hostname.invalid";
+  const idp = await startFakeIdp({ publicIssuer, fixedHostname: true });
+  t.after(() => idp.close());
+  const authConfig = { enabled: true, ...baseAuthConfig(idp), issuerUri: publicIssuer, issuerInternalUri: idp.issuer };
+
+  const server = await startServer(authConfig);
+  const base = `http://localhost:${server.address().port}`;
+  t.after(() => closeServer(server));
+
+  await t.test("full login round trip still works via the internal token endpoint", async () => {
+    const loginRes = await fetch(`${base}/auth/login`, { redirect: "manual" });
+    const flowCookie = loginRes.headers.get("set-cookie").split(";")[0];
+    const state = new URL(loginRes.headers.get("location")).searchParams.get("state");
+
+    const callbackRes = await fetch(`${base}/auth/callback?code=abc&state=${state}`, {
+      headers: { cookie: flowCookie },
+      redirect: "manual",
+    });
+    assert.equal(callbackRes.status, 302, "expected the callback to succeed despite the public token_endpoint being unreachable");
+    assert.equal(callbackRes.headers.get("location"), "/graphiql");
+  });
+});
+
 test("authConfig.allowedRedirectUris: running login/logout on behalf of another origin", async (t) => {
   const idp = await startFakeIdp();
   t.after(() => idp.close());

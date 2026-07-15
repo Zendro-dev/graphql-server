@@ -10,19 +10,34 @@ function loadClient() {
 // every login/callback/refresh/logout reuses it instead of re-discovering.
 const configCache = new Map();
 
+// Endpoints this server calls itself (token exchange, ID-token signature
+// verification) - these need to be reachable from here, so they're rewritten
+// to the internal origin below. Endpoints the *browser* is redirected to
+// (authorization_endpoint, end_session_endpoint, ...) are deliberately left
+// untouched - the browser can't resolve the internal hostname either.
+const SERVER_TO_SERVER_ENDPOINTS = [
+  "token_endpoint",
+  "jwks_uri",
+  "userinfo_endpoint",
+  "introspection_endpoint",
+  "revocation_endpoint",
+  "device_authorization_endpoint",
+  "pushed_authorization_request_endpoint",
+];
+
 // Fetches the discovery document from issuerInternalUri (network-reachable)
 // and builds a Configuration directly from it via the constructor, instead
 // of using discovery()'s own HTTP layer against issuerUri (which would be
 // unreachable). Used for identity providers whose *issuer* (and other
 // browser-facing URLs) is a fixed public hostname that isn't reachable from
 // here - e.g. Keycloak in Docker Compose, where OAUTH2_ISSUER_URI is the
-// host's published port (matching what Keycloak's fixed KC_HOSTNAME always
-// reports as its issuer, regardless of how it's reached) but this server
-// must actually connect via the internal service hostname. Keycloak's
-// "backchannel dynamic hostname" support means server-to-server endpoints
-// (token_endpoint, jwks_uri) in the discovered metadata already come back
-// pointing at whichever hostname was used to reach it here - so once
-// fetched, no further connection redirection is needed.
+// host's published port. That hostname is fixed (KC_HOSTNAME set explicitly)
+// precisely so the issuer claim always matches it regardless of how Keycloak
+// was reached - which also means Keycloak's "dynamic hostname" backchannel
+// resolution (reporting whichever host was used to reach it) never kicks in,
+// and every endpoint in the discovered metadata still points at the public
+// origin even when fetched via the internal one. Reachable-from-here
+// endpoints are rewritten to the internal origin explicitly below.
 async function discoverVia(client, authConfig) {
   const discoveryUrl = new URL(".well-known/openid-configuration", authConfig.issuerInternalUri.replace(/\/?$/, "/"));
   const res = await fetch(discoveryUrl);
@@ -30,6 +45,13 @@ async function discoverVia(client, authConfig) {
   const metadata = await res.json();
   if (metadata.issuer !== authConfig.issuerUri) {
     throw new Error(`discovered issuer "${metadata.issuer}" does not match the expected issuerUri "${authConfig.issuerUri}"`);
+  }
+  const publicOrigin = new URL(authConfig.issuerUri).origin;
+  const internalOrigin = new URL(authConfig.issuerInternalUri).origin;
+  for (const key of SERVER_TO_SERVER_ENDPOINTS) {
+    if (typeof metadata[key] === "string" && metadata[key].startsWith(publicOrigin)) {
+      metadata[key] = internalOrigin + metadata[key].slice(publicOrigin.length);
+    }
   }
   const config = new client.Configuration(metadata, authConfig.clientId, authConfig.clientSecret);
   if (new URL(authConfig.issuerInternalUri).protocol === "http:") client.allowInsecureRequests(config);
