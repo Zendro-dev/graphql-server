@@ -66,7 +66,7 @@ async function setupMongoDriver() {
   let config = storageConfig["default-mongodb"];
   const uri = `mongodb://${config.username}:${config.password}@${config.host}:${config.port}/${config.database}`;
   console.log(uri);
-  const client = new MongoClient(uri, { useUnifiedTopology: true });
+  const client = new MongoClient(uri);
   const db = await connectMongoDb(client);
   return db;
 }
