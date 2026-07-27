@@ -320,6 +320,15 @@ async function createDefaultUser(token) {
   // create the user
   await keycloakPostRequest(token, `admin/realms/${KEYCLOAK_REALM}/users`, {
     username: "zendro-admin",
+    // The realm's default User Profile schema marks email/firstName/lastName
+    // as required attributes - an admin-created user missing them fails that
+    // check at login time (Keycloak redirects into its own VERIFY_PROFILE
+    // flow instead of back to redirect_uri), even though nothing persists a
+    // requiredAction on the user object itself.
+    email: "zendro-admin@zendro.dev",
+    emailVerified: true,
+    firstName: "Zendro",
+    lastName: "Admin",
     credentials: [
       {
         temporary: false,
@@ -400,7 +409,7 @@ async function setupKeyCloak() {
 async function cleanupKeyCloak() {
   // Delete the realm
   const token = await getMasterToken();
-  await keycloakDeleteRequest(token, `realms/${KEYCLOAK_REALM}`);
+  await keycloakDeleteRequest(token, `admin/realms/${KEYCLOAK_REALM}`);
 }
 
 module.exports = {
