@@ -230,10 +230,22 @@ app.post("/meta_query", cors(), attachGraphiqlSession, async (req, res, next) =>
       if (resolversHaveData) {
         if (helper.isNotUndefinedAndNotNull(jq)) {
           // jq
-          output = await nodejq.run(jq, graphQlResponse.data, {
-            input: "json",
-            output: "json",
-          });
+          // node-jq validates its `json` input against a plain-JSON-value
+          // schema before stringifying it - it no longer stringifies first
+          // the way older versions did, where JSON.stringify's own
+          // Date->toJSON() coercion made this a non-issue. Scalar values
+          // like DateTime fields can still be real Date instances at this
+          // point (resolvers/scalar serializers aren't guaranteed to
+          // stringify them), so round-trip through JSON first to normalize
+          // them the same way JSON.stringify always implicitly did.
+          output = await nodejq.run(
+            jq,
+            JSON.parse(JSON.stringify(graphQlResponse.data)),
+            {
+              input: "json",
+              output: "json",
+            }
+          );
         } else {
           // JSONPath
           output = JSONPath({
