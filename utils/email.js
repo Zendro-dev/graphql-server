@@ -1,5 +1,4 @@
 const NodeMailer = require('nodemailer');
-const SmtpTransport = require('nodemailer-smtp-transport');
 const Globals = require('../config/globals');
 const path = require('path');
 
@@ -12,7 +11,11 @@ module.exports = {
 
         console.log(`${dst_email}, ${message}, ${Globals.MAIL_ACCOUNT}, ${Globals.MAIL_PASSWORD}`);
 
-        let transporter = NodeMailer.createTransport(SmtpTransport({
+        // nodemailer-smtp-transport is an ancient (2016-era) plugin from
+        // before nodemailer 2.0 built SMTP support in directly - this is
+        // now just the plain options object nodemailer's own
+        // createTransport() accepts natively (see its own SMTP docs).
+        let transporter = NodeMailer.createTransport({
             service: Globals.MAIL_SERVICE,
             host: Globals.MAIL_HOST,
             auth: {
@@ -20,7 +23,7 @@ module.exports = {
                 user: Globals.MAIL_ACCOUNT,
                 pass: Globals.MAIL_PASSWORD
             }
-        }));
+        });
 
         let mailOptions = {
             from: Globals.MAIL_ACCOUNT,
