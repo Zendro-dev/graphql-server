@@ -281,10 +281,19 @@ app.use(function (err, req, res, next) {
   }
 });
 
-var server = app.listen(APP_PORT, async () => {
+// Storage handlers must be initialized before the server accepts any
+// connections - app.listen()'s own callback fires only once the port is
+// bound, not once this async setup is done, so requests arriving in that
+// window would hit uninitialized (un-.init()'d) Sequelize model classes
+// and crash (e.g. "Cannot read properties of undefined (reading
+// 'constructor')" from Model.count(), since model.sequelize is unset).
+(async () => {
   await initializeStorageHandlers(models);
   await initializeStorageHandlers(adapters, "adapter");
-  console.log(`App listening on port ${APP_PORT}`);
-});
 
-module.exports = server;
+  var server = app.listen(APP_PORT, () => {
+    console.log(`App listening on port ${APP_PORT}`);
+  });
+
+  module.exports = server;
+})();
