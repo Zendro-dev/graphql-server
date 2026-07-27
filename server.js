@@ -288,8 +288,20 @@ app.use(function (err, req, res, next) {
 // and crash (e.g. "Cannot read properties of undefined (reading
 // 'constructor')" from Model.count(), since model.sequelize is unset).
 (async () => {
-  await initializeStorageHandlers(models);
-  await initializeStorageHandlers(adapters, "adapter");
+  try {
+    await initializeStorageHandlers(models);
+    await initializeStorageHandlers(adapters, "adapter");
+  } catch (err) {
+    // Since app.listen() no longer runs until this resolves, nothing else
+    // keeps the process alive on failure - left uncaught, it would be
+    // swallowed by the process.on("uncaughtException") handler below (which
+    // exists for a narrower purpose - see its own comment) and the process
+    // would exit 0 with no server ever listening, silently, instead of
+    // loudly failing in a way a process supervisor (nodemon, Docker restart
+    // policies) can detect and act on.
+    console.error("Failed to initialize storage handlers:", err);
+    process.exit(1);
+  }
 
   var server = app.listen(APP_PORT, () => {
     console.log(`App listening on port ${APP_PORT}`);
